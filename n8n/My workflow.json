@@ -1,0 +1,377 @@
+{
+  "name": "Macro Signal Bot",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.5,
+      "position": [
+        -80,
+        -80
+      ],
+      "id": "9222285e-7618-455c-844f-64a73af74ded",
+      "name": "Telegram Trigger",
+      "webhookId": "REDACTED",
+      "credentials": {
+        "telegramApi": {
+          "id": "REDACTED",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "command": "cd ~/Personal-Projects && git pull && python bond-30y/predict_yield.py"
+      },
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        480,
+        -464
+      ],
+      "id": "6b13c6d3-7f51-4122-9ef2-0dfe26bc93cd",
+      "name": "Execute a command",
+      "credentials": {
+        "sshPassword": {
+          "id": "REDACTED",
+          "name": "SSH Password account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-3.6-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-3.6-flash"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are a quantitative fixed-income strategist. Analyze this ML model output for the US 30-Year Treasury Yield (^TYX):\n\n{{ $json.stdout }}\n\nProduce a concise decision brief with these 3 sections:\n1. Signal Summary: Yield level, predicted direction, and model confidence.\n2. Fixed Income Rationale: Note that bond prices move inversely to yields. Explain what the short-term trend and 5-day momentum imply for 30Y Treasury prices.\n3. Actionable Recommendation: A clear recommendation (BUY, SELL, or HOLD/CASH)."
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        624,
+        -464
+      ],
+      "id": "3477c49f-396f-4753-800f-e1db03eb28a4",
+      "name": "Message a model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "REDACTED",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.content.parts[0].text }}",
+        "additionalFields": {
+          "parse_mode": "HTML"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        896,
+        -464
+      ],
+      "id": "538b0793-fc60-4c56-b14c-0790a9fcbd44",
+      "name": "Send a text message",
+      "webhookId": "REDACTED",
+      "credentials": {
+        "telegramApi": {
+          "id": "REDACTED",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.message.text }}",
+                    "rightValue": "/yield30",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "6bb7db3a-9393-4ecd-a33c-3527b9b0c009"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "10a64751-c92e-456c-9ab2-af3eaab745cf",
+                    "leftValue": "={{ $json.message.text }}",
+                    "rightValue": "/sp500",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        272,
+        -96
+      ],
+      "id": "f126124f-87f2-4a5e-b362-d4c234694067",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.content.parts[0].text }}",
+        "additionalFields": {
+          "parse_mode": "HTML"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        912,
+        -304
+      ],
+      "id": "2eabcebb-1c2c-41af-bf70-2c7c9fd40a28",
+      "name": "Send a text message1",
+      "webhookId": "REDACTED",
+      "credentials": {
+        "telegramApi": {
+          "id": "REDACTED",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "command": "cd ~/Personal-Projects && git pull && python sp500/sp500.py"
+      },
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        480,
+        -304
+      ],
+      "id": "26f0de8c-7fe5-444a-ae9c-6e9b37e16488",
+      "name": "Execute a command1",
+      "credentials": {
+        "sshPassword": {
+          "id": "REDACTED",
+          "name": "SSH Password account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-3.6-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-3.6-flash"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are a quantitative equity strategist. Analyze this ML model output for the S&P 500 Index (^GSPC):\n\n{{ $json.stdout }}\n\nProduce a concise decision brief with these 3 sections:\n1. Signal Summary: Current index level, predicted direction, and model confidence.\n2. Equity Market Rationale: Explain what the short-term trend, momentum, relative volume, and Bollinger Band position imply about near-term price action.\n3. Actionable Recommendation: A clear recommendation (BUY, SELL, or HOLD/CASH)."
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        624,
+        -304
+      ],
+      "id": "8de358db-adec-4918-bb50-59d4e4f52541",
+      "name": "Message a model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "REDACTED",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "e3dc9d4f-1ad0-4efc-9d51-fbdc69b4e505",
+              "leftValue": "={{ $json.message.from.id }}",
+              "rightValue": "YOUR_TELEGRAM_USER_ID",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        96,
+        -80
+      ],
+      "id": "ec840c06-3c2a-4c3c-9464-a10bc8044e9a",
+      "name": "If (only me)"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "If (only me)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a command": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Execute a command",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Execute a command1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a command1": {
+      "main": [
+        [
+          {
+            "node": "Message a model1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model1": {
+      "main": [
+        [
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If (only me)": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "REDACTED",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "REDACTED"
+  },
+  "nodeGroups": [],
+  "id": "REDACTED",
+  "tags": []
+}
