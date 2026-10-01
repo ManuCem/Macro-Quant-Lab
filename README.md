@@ -18,14 +18,21 @@ Each folder is a self-contained experiment:
   time-series cross-validation.
 - **sp500/** — same approach applied to the S&P 500 index, with added
   volume and Bollinger Band features.
-- **VIX/** — tests whether the VIX is "overpriced" relative to the volatility
-  that actually materializes. Since the VIX is a forward-looking (~30-day)
-  implied volatility, each day's VIX is compared with the S&P 500's realized
-  volatility over the *following* 21 trading days (annualized, from log
-  returns) rather than the trailing window. Over 30 years of data, the script
-  reports the average bias (VIX − realized; a positive value means the VIX
-  overestimated volatility, i.e. the volatility risk premium) and the RMSE,
-  and saves an interactive Plotly chart to `VIX/output/volatility.html`.
+- **VIX/** — tests whether the VIX is "overpriced" vs the volatility that
+  actually followed. Each day's VIX (a ~30-day forward-looking measure) is
+  compared with the S&P 500's realized volatility over the *next* 21 trading
+  days, reporting the average bias (VIX − realized) and RMSE, and saving a
+  Plotly chart to `VIX/output/volatility.html`. **Takeaway:** the VIX tracks
+  volatility well (correlation ~0.7) but overprices it on ~84% of days
+  (+3.8 pts on average); it reacts to shocks rather than predicting them.
+
+  | Episode | Avg VIX | Avg realized | VIX − realized | Market |
+  |---|---|---|---|---|
+  | 1998 LTCM | 33.3 | 26.1 | +7.2 | Overreacted |
+  | Dot-com (2000–02) | 25.4 | 22.1 | +3.3 | Slightly overreacted |
+  | 2008 crisis | 48.8 | 53.0 | −4.2 | Underestimated |
+  | Covid 2020 | 41.4 | 48.0 | −6.6 | Underestimated |
+  | Tariff shock (Apr–mid-May 2025) | 28.4 | 21.8 | +6.6 | Overreacted |
 
 More will be added as new ideas come up — this is a lab, not a finished product.
 
