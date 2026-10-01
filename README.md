@@ -18,6 +18,14 @@ Each folder is a self-contained experiment:
   time-series cross-validation.
 - **sp500/** — same approach applied to the S&P 500 index, with added
   volume and Bollinger Band features.
+- **VIX/** — tests whether the VIX is "overpriced" relative to the volatility
+  that actually materializes. Since the VIX is a forward-looking (~30-day)
+  implied volatility, each day's VIX is compared with the S&P 500's realized
+  volatility over the *following* 21 trading days (annualized, from log
+  returns) rather than the trailing window. Over 30 years of data, the script
+  reports the average bias (VIX − realized; a positive value means the VIX
+  overestimated volatility, i.e. the volatility risk premium) and the RMSE,
+  and saves an interactive Plotly chart to `VIX/output/volatility.html`.
 
 More will be added as new ideas come up — this is a lab, not a finished product.
 
