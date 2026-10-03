@@ -100,6 +100,11 @@ def build_dataset():
     # Keep every day that has both prices; `realized` is NaN for the last 21
     # days (their future isn't known yet) -- irrelevant for historical events.
     data = data.dropna(subset=["sp500", "vix"])
+    # Save a copy as CSV next to this script (VIX/csv/data.csv). to_csv creates
+    # the file but not the folder, so make the folder first.
+    csv_path = Path(__file__).parent / "csv" / "data.csv"
+    csv_path.parent.mkdir(parents=True, exist_ok=True)
+    data.to_csv(csv_path)
     return data
 
 
@@ -119,6 +124,7 @@ def slice_event(data, day0):
     )
     # gap > 0: VIX above what happened (overpriced); gap < 0: underestimated
     window["gap"] = window["vix"] - window["realized"]
+
     return window
 
 
@@ -143,6 +149,7 @@ def phase_table(window):
             "realized": part["realized"].mean(),
             "gap": part["gap"].mean(),
         })
+
     return rows
 
 
