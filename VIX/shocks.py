@@ -13,18 +13,16 @@ and score the VIX in each phase as (VIX - realized volatility over the next 21
 trading days). A positive gap means the VIX overpriced volatility; a negative
 gap means the market underestimated what was coming.
 
-Output: VIX/output/shocks.html (one tab per shock + a dashboard tab).
+Output: VIX/output/shocks.html (one tab per shock + a dashboard tab), drawn with Apache ECharts.
 Reuses the data helpers from volatility.py so both scripts measure the same way.
 """
 
+import json
 from html import escape
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import plotly.graph_objects as go
-from plotly.offline import get_plotlyjs
-from plotly.subplots import make_subplots
 
 from volatility import (
     FORWARD_HORIZON,
@@ -37,6 +35,8 @@ from volatility import (
 )
 
 OUTPUT_PATH = Path(__file__).parent / "output" / "shocks.html"
+# Apache ECharts, reused from the ecb/ folder; embedded in the page so it stays one standalone file.
+ECHARTS_PATH = Path(__file__).parent.parent / "ecb" / "lib" / "echarts.js"
 
 PRE_DAYS = 40    # trading days shown before day 0 (~2 months of "before")
 POST_DAYS = 60   # trading days shown after day 0 (~3 months of "after")
@@ -198,119 +198,144 @@ def shock_low(data, day0):
 
 
 # --------------------------------------------------------------------------
-# 2. Charts
+# 2. Charts (Apache ECharts)
 # --------------------------------------------------------------------------
+# Python only prepares the numbers (as JSON); the charts themselves are built
+# in the browser by ECHARTS_JS below, one chart per <div class="chart">.
 
-def style_axes(fig, **kwargs):
-    """Shared look: recessive grid, light axes, system font."""
-    fig.update_layout(
-        paper_bgcolor=SURFACE, plot_bgcolor=SURFACE,
-        font=dict(family="system-ui, -apple-system, 'Segoe UI', sans-serif",
-                  color=INK_2, size=12),
-        margin=dict(l=56, r=16, t=40, b=40),
-        legend=dict(orientation="h", y=1.12, x=0),
-        hovermode="x unified",
-        **kwargs,
-    )
-    fig.update_xaxes(gridcolor=GRID, linecolor=AXIS, zeroline=False)
-    fig.update_yaxes(gridcolor=GRID, linecolor=AXIS, zeroline=False)
+def chart_data(windows):
+    """Everything the browser needs to draw the charts, as plain lists."""
+    def clean(series):
+        # NaN is not valid JSON, so use None (-> null). Round to keep the file small.
+        return [None if pd.isna(v) else round(float(v), 2) for v in series]
 
-
-def shock_figure(window, event):
-    """Top: VIX vs realized vol. Bottom: the gap, coloured by its sign."""
-    fig = make_subplots(rows=2, cols=1, shared_xaxes=True,
-                        row_heights=[0.66, 0.34], vertical_spacing=0.06)
-
-    # Solid line = VIX (what the market expected); dashed = what happened.
-    fig.add_trace(go.Scatter(
-        x=window.index, y=window["vix"], name="VIX (expected)",
-        line=dict(color=event["color"], width=2)), row=1, col=1)
-    fig.add_trace(go.Scatter(
-        x=window.index, y=window["realized"],
-        name=f"Realized, next {FORWARD_HORIZON}d (actual)",
-        line=dict(color=event["color"], width=2, dash="dash")), row=1, col=1)
-
-    # Bottom panel: blue bar = VIX too high, red bar = VIX too low.
-    bar_colors = np.where(window["gap"] >= 0, OVER_COLOR, UNDER_COLOR)
-    fig.add_trace(go.Bar(
-        x=window.index, y=window["gap"], marker_color=bar_colors,
-        name="Gap (VIX - realized)", showlegend=False), row=2, col=1)
-
-    # Phase shading + the day-0 marker, drawn across both panels.
-    day0 = window.index[window["event_day"] == 0][0]
-    fig.add_vrect(x0=window.index[0], x1=day0, fillcolor=MUTED, opacity=0.10,
-                  line_width=0, layer="below")
-    fig.add_vline(x=day0, line=dict(color=INK, width=1.5, dash="dot"))
-    for label, x in [("Pre-shock", window.index[PRE_DAYS // 2]),
-                     ("Day 0", day0),
-                     ("Aftermath", window.index[PRE_DAYS + POST_DAYS // 2])]:
-        fig.add_annotation(x=x, y=1.0, yref="paper", text=label, showarrow=False,
-                           yanchor="bottom", font=dict(color=INK_2, size=12))
-
-    style_axes(fig, height=520)
-    fig.update_yaxes(title_text="Annualized vol (%)", row=1, col=1)
-    fig.update_yaxes(title_text="VIX - realized (pts)", row=2, col=1)
-    return fig
-
-
-def dashboard_figures(windows):
-    """Four shocks overlaid on one 'days since day 0' axis."""
-    # A) VIX and realized side by side (same y range so they can be compared)
-    levels = make_subplots(rows=1, cols=2, shared_yaxes=True,
-                           subplot_titles=("VIX (expected)",
-                                           f"Realized, next {FORWARD_HORIZON}d (actual)"))
-    gap = go.Figure()
-    sp = go.Figure()
-
+    events = []
     for event, window in windows:
-        common = dict(x=window["event_day"], legendgroup=event["key"],
-                      line=dict(color=event["color"], width=2))
-        levels.add_trace(go.Scatter(y=window["vix"], name=event["name"], **common),
-                         row=1, col=1)
-        levels.add_trace(go.Scatter(y=window["realized"], showlegend=False, **common),
-                         row=1, col=2)
-        gap.add_trace(go.Scatter(y=window["gap"], name=event["name"], **common))
-
         # S&P indexed to 100 on the day before the shock, so different index
         # levels (1,400 in 2000 vs 5,000+ in 2025) become comparable.
         base = window.loc[window["event_day"] == -1, "sp500"].iloc[0]
-        sp.add_trace(go.Scatter(y=window["sp500"] / base * 100,
-                                name=event["name"], **common))
-
-    style_axes(levels, height=420)
-    # This chart has subplot titles, so lift the legend above them.
-    levels.update_layout(margin=dict(l=56, r=16, t=80, b=40),
-                         legend=dict(orientation="h", y=1.2, x=0))
-    levels.update_yaxes(title_text="Annualized vol (%)", col=1)
-    levels.update_xaxes(title_text="Trading days since day 0")
-
-    style_axes(gap, height=380)
-    gap.add_hline(y=0, line=dict(color=INK, width=1))
-    gap.update_yaxes(title_text="VIX - realized (pts)")
-    gap.update_xaxes(title_text="Trading days since day 0")
-    gap.add_annotation(xref="paper", yref="paper", x=1, y=1.0, xanchor="right",
-                       yanchor="bottom", showarrow=False, font=dict(color=MUTED),
-                       text="above 0: VIX overpriced  |  below 0: underestimated")
-
-    style_axes(sp, height=380)
-    sp.add_hline(y=100, line=dict(color=AXIS, width=1))
-    sp.update_yaxes(title_text="S&P 500 (day -1 = 100)")
-    sp.update_xaxes(title_text="Trading days since day 0")
-
-    for fig in (levels, gap, sp):
-        fig.add_vline(x=0, line=dict(color=INK, width=1.5, dash="dot"))
-    return levels, gap, sp
+        events.append({
+            "key": event["key"], "name": event["name"], "color": event["color"],
+            "dates": [f"{d:%Y-%m-%d}" for d in window.index],
+            "day0": f"{window.index[window['event_day'] == 0][0]:%Y-%m-%d}",
+            "event_day": [int(v) for v in window["event_day"]],
+            "vix": clean(window["vix"]),
+            "realized": clean(window["realized"]),
+            "gap": clean(window["gap"]),
+            "sp_index": clean(window["sp500"] / base * 100),
+        })
+    return {
+        "events": events, "horizon": FORWARD_HORIZON, "pre_days": PRE_DAYS,
+        "colors": {"ink": INK, "ink2": INK_2, "muted": MUTED, "grid": GRID,
+                   "axis": AXIS, "over": OVER_COLOR, "under": UNDER_COLOR},
+    }
 
 
-def to_div(fig):
-    """Plotly figure -> an HTML <div>; plotly.js itself is embedded only once."""
-    return fig.to_html(full_html=False, include_plotlyjs=False,
-                       config={"responsive": True, "displaylogo": False})
+def chart_div(chart_id, height):
+    """Empty box; ECHARTS_JS draws the chart into it the first time its tab is shown."""
+    return f'<div class="chart" id="{chart_id}" style="height:{height}px"></div>'
 
 
-# --------------------------------------------------------------------------
-# 3. HTML page
-# --------------------------------------------------------------------------
+ECHARTS_JS = """
+const DATA = __DATA__;
+const K = DATA.colors;                     // shared ink / grid / diverging colours
+const FONT = "system-ui, -apple-system, 'Segoe UI', sans-serif";
+const fmt1 = v => (v === null || v === undefined) ? "-" : Number(v).toFixed(1);
+
+// Axis look shared by every chart: recessive grid, light axis line.
+const axisStyle = {
+  axisLine: { lineStyle: { color: K.axis } }, axisTick: { lineStyle: { color: K.axis } },
+  axisLabel: { color: K.ink2 }, splitLine: { lineStyle: { color: K.grid } }
+};
+// Options shared by every chart.
+const base = () => ({
+  animation: false, backgroundColor: "transparent", textStyle: { fontFamily: FONT, color: K.ink2 },
+  tooltip: { trigger: "axis", valueFormatter: fmt1, confine: true },
+  axisPointer: { link: [{ xAxisIndex: "all" }] }
+});
+const yAxis = (name, extra = {}) => ({ type: "value", name, nameLocation: "middle", nameGap: 42,
+  nameTextStyle: { color: K.ink2 }, scale: true, ...axisStyle, ...extra });
+
+// ---- one shock: VIX vs realized (top), gap bars (bottom) ----
+function shockOption(e) {
+  // dotted vertical line on day 0
+  const day0Line = { silent: true, symbol: "none", lineStyle: { color: K.ink, width: 1.5, type: "dotted" },
+                     label: { show: false }, data: [{ xAxis: e.day0 }] };
+  // shaded band (pre-shock) or invisible band (aftermath) that only carries a text label
+  const phaseArea = (name, from, to, shade) => [
+    { name, xAxis: from, itemStyle: { color: shade ? K.muted : "transparent", opacity: shade ? 0.1 : 1 },
+      label: { position: "insideTop", color: K.ink2 } },
+    { xAxis: to }];
+  const last = e.dates.length - 1;
+  return { ...base(),
+    legend: { top: 0, left: 0, textStyle: { color: K.ink2 } },
+    grid: [{ left: 56, right: 16, top: 40, height: 270 }, { left: 56, right: 16, top: 340, height: 110 }],
+    xAxis: [{ type: "category", gridIndex: 0, data: e.dates, axisLabel: { show: false }, axisLine: axisStyle.axisLine, axisTick: { show: false } },
+            { type: "category", gridIndex: 1, data: e.dates, ...axisStyle, splitLine: { show: false } }],
+    yAxis: [yAxis("Annualized vol (%)", { gridIndex: 0 }), yAxis("VIX - realized (pts)", { gridIndex: 1, scale: false })],
+    dataZoom: [{ type: "inside", xAxisIndex: [0, 1] }],
+    series: [
+      { name: "VIX (expected)", type: "line", xAxisIndex: 0, yAxisIndex: 0, data: e.vix, showSymbol: false,
+        lineStyle: { color: e.color, width: 2 }, itemStyle: { color: e.color }, markLine: day0Line,
+        markArea: { silent: true, data: [phaseArea("Pre-shock", e.dates[0], e.day0, true), phaseArea("Aftermath", e.day0, e.dates[last], false)] } },
+      { name: "Realized, next " + DATA.horizon + "d (actual)", type: "line", xAxisIndex: 0, yAxisIndex: 0, data: e.realized, showSymbol: false,
+        lineStyle: { color: e.color, width: 2, type: "dashed" }, itemStyle: { color: e.color } },
+      // blue bar = VIX too high (overpriced), red bar = VIX too low (underestimated)
+      { name: "Gap (VIX - realized)", type: "bar", xAxisIndex: 1, yAxisIndex: 1, data: e.gap, markLine: day0Line,
+        itemStyle: { color: p => p.value >= 0 ? K.over : K.under } }
+    ] };
+}
+
+// ---- dashboard: four shocks overlaid on one "days since day 0" axis ----
+const names = DATA.events.map(e => e.name);
+const pairs = (e, field) => e.event_day.map((d, i) => [d, e[field][i]]);   // [x = day, y = value]
+const day0Marker = { silent: true, symbol: "none", lineStyle: { color: K.ink, width: 1.5, type: "dotted" }, label: { show: false }, data: [{ xAxis: 0 }] };
+const lineSeries = (e, field, extra = {}) => ({ name: e.name, type: "line", data: pairs(e, field), showSymbol: false,
+  lineStyle: { color: e.color, width: 2 }, itemStyle: { color: e.color }, ...extra });
+const dayAxis = (extra = {}) => ({ type: "value", min: -DATA.pre_days, name: "Trading days since day 0", nameLocation: "middle", nameGap: 28,
+  nameTextStyle: { color: K.ink2 }, ...axisStyle, splitLine: { show: false }, ...extra });
+// a reference line on the first series only: dotted vertical at day 0 + a solid horizontal one
+const refLines = (yValue, yColor) => ({ markLine: { silent: true, symbol: "none", label: { show: false }, data: [
+  { xAxis: 0, lineStyle: { color: K.ink, width: 1.5, type: "dotted" } }, { yAxis: yValue, lineStyle: { color: yColor, width: 1, type: "solid" } }] } });
+
+function levelsOption() {
+  // Same y range on both panels so VIX and realized can be compared by eye.
+  const all = DATA.events.flatMap(e => [...e.vix, ...e.realized]).filter(v => v !== null);
+  const top = Math.ceil(Math.max(...all) / 10) * 10;
+  return { ...base(),
+    legend: { top: 0, left: 0, data: names, textStyle: { color: K.ink2 } },
+    title: [{ text: "VIX (expected)", left: 56, top: 34, textStyle: { color: K.ink2, fontSize: 13, fontWeight: 600 } },
+            { text: "Realized, next " + DATA.horizon + "d (actual)", left: "54%", top: 34, textStyle: { color: K.ink2, fontSize: 13, fontWeight: 600 } }],
+    grid: [{ left: 56, width: "40%", top: 70, height: 250 }, { left: "54%", right: 16, top: 70, height: 250 }],
+    xAxis: [dayAxis({ gridIndex: 0 }), dayAxis({ gridIndex: 1, name: "" })],
+    yAxis: [yAxis("Annualized vol (%)", { gridIndex: 0, min: 0, max: top, scale: false }), yAxis("", { gridIndex: 1, min: 0, max: top, scale: false })],
+    series: DATA.events.flatMap(e => [
+      lineSeries(e, "vix", { xAxisIndex: 0, yAxisIndex: 0, markLine: day0Marker }),
+      lineSeries(e, "realized", { xAxisIndex: 1, yAxisIndex: 1, markLine: day0Marker })]) };
+}
+function gapOption() {
+  return { ...base(),
+    legend: { top: 0, left: 0, data: names, textStyle: { color: K.ink2 } },
+    title: { text: "above 0: VIX overpriced  |  below 0: underestimated", right: 16, top: 2, textStyle: { color: K.muted, fontSize: 12, fontWeight: "normal" } },
+    grid: { left: 56, right: 16, top: 40, height: 260 },
+    xAxis: dayAxis(), yAxis: yAxis("VIX - realized (pts)", { scale: false }),
+    series: DATA.events.map((e, i) => lineSeries(e, "gap", i === 0 ? refLines(0, K.ink) : {})) };
+}
+function spOption() {
+  return { ...base(),
+    legend: { top: 0, left: 0, data: names, textStyle: { color: K.ink2 } },
+    grid: { left: 56, right: 16, top: 40, height: 260 },
+    xAxis: dayAxis(), yAxis: yAxis("S&P 500 (day -1 = 100)"),
+    series: DATA.events.map((e, i) => lineSeries(e, "sp_index", i === 0 ? refLines(100, K.axis) : {})) };
+}
+
+// chart id -> function that builds its option
+const BUILDERS = { "chart-levels": levelsOption, "chart-gap": gapOption, "chart-sp": spOption };
+DATA.events.forEach(e => BUILDERS["chart-" + e.key] = () => shockOption(e));
+const INSTANCES = {};
+addEventListener("resize", () => Object.values(INSTANCES).forEach(c => c.resize()));
+"""
+
 
 CSS = """
 :root { color-scheme: light; }
@@ -346,9 +371,16 @@ function showTab(id) {
   document.querySelectorAll('.panel').forEach(p => p.hidden = (p.id !== id));
   document.querySelectorAll('.tabs button').forEach(b =>
     b.setAttribute('aria-selected', b.dataset.tab === id));
-  // Plotly charts drawn inside a hidden panel have no size; fix on show.
-  document.querySelectorAll('#' + id + ' .plotly-graph-div')
-    .forEach(g => Plotly.Plots.resize(g));
+  // ECharts can't measure a hidden box, so each chart is created the first
+  // time its tab is shown (and just resized on later visits).
+  document.querySelectorAll('#' + id + ' .chart').forEach(div => {
+    if (!INSTANCES[div.id]) {
+      INSTANCES[div.id] = echarts.init(div);
+      INSTANCES[div.id].setOption(BUILDERS[div.id]());
+    } else {
+      INSTANCES[div.id].resize();
+    }
+  });
 }
 document.querySelectorAll('.tabs button').forEach(b =>
   b.addEventListener('click', () => showTab(b.dataset.tab)));
@@ -391,7 +423,7 @@ def shock_panel(event, window):
   <h2>{escape(event['name'])} - day 0 = {facts['day0_date']:%d %b %Y}</h2>
   <p class="sub">{escape(event['why'])}</p>
   <div class="tiles">{tiles}</div>
-  {to_div(shock_figure(window, event))}
+  {chart_div('chart-' + event['key'], 480)}
   {phase_table_html(phase_table(window))}
   <p class="note">Solid line = VIX (the market's expectation); dashed = the
   volatility that actually followed over the next {FORWARD_HORIZON} trading
@@ -420,7 +452,6 @@ def dashboard_panel(windows):
             f'<td>{fmt(event["low"]["fall"], True, "%")} '
             f'({event["low"]["low_date"]:%b %Y})</td></tr>')
 
-    levels, gap, sp = dashboard_figures(windows)
     return f"""
 <section class="panel" id="dashboard" hidden>
   <h2>All four shocks together</h2>
@@ -431,9 +462,9 @@ def dashboard_panel(windows):
     <th>Gap: day 0</th><th>Gap: aftermath</th><th>VIX peak</th>
     <th>Peak realized</th><th>S&P day 0 to low</th></tr>{rows}
   </table></div>
-  {to_div(levels)}
-  {to_div(gap)}
-  {to_div(sp)}
+  {chart_div('chart-levels', 340)}
+  {chart_div('chart-gap', 320)}
+  {chart_div('chart-sp', 320)}
   <p class="note">Gap above 0 = VIX overpriced volatility; below 0 = the market
   underestimated what was coming.</p>
 </section>"""
@@ -450,14 +481,14 @@ def build_page(windows):
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>VIX around market shocks</title>
 <style>{CSS}</style>
-<script>{get_plotlyjs()}</script>
+<script>{ECHARTS_PATH.read_text(encoding='utf-8')}</script>
 </head><body><main>
 <h1>VIX vs what actually happened, around four market shocks</h1>
 <p class="sub">{PRE_DAYS} trading days before day 0, day 0, and {POST_DAYS} days
 after. S&amp;P 500 and VIX data from Yahoo Finance.</p>
 <div class="tabs" role="tablist">{buttons}</div>
 {panels}
-<script>{JS}showTab('{windows[0][0]['key']}');</script>
+<script>{ECHARTS_JS.replace('__DATA__', json.dumps(chart_data(windows)))}{JS}showTab('{windows[0][0]['key']}');</script>
 </main></body></html>"""
 
 

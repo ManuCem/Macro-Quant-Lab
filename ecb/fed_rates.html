@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Federal Reserve – Federal Funds Target Rate</title>
+<style>
+  body { font-family: system-ui, sans-serif; margin: 0; padding: 24px; background: #0f172a; color: #e2e8f0; }
+  h1 { margin: 0 0 4px; font-size: 22px; }
+  p  { margin: 0 0 16px; color: #94a3b8; font-size: 14px; }
+  .card { background: #1e293b; border-radius: 12px; padding: 16px; max-width: 1100px; }
+  #chart { height: 520px; width: 100%; }
+</style>
+<!-- Apache ECharts, stored locally in lib/ so the page works offline -->
+<script src="lib/echarts.js"></script>
+</head>
+<body>
+<h1>Federal Reserve – Federal Funds Target Rate</h1>
+<p>Target rate (upper and lower bound), 1995 – Oct 2026. Scroll to zoom, hover to compare. Next FOMC decision: 28 Oct 2026.</p>
+<div class="card"><div id="chart"></div></div>
+<script>
+// [date effective, UPPER bound of the target in %]
+const upper = [["1995-01-01", 5.5], ["1995-02-01", 6.0], ["1995-07-06", 5.75], ["1995-12-19", 5.5], ["1996-01-31", 5.25], ["1997-03-25", 5.5], ["1998-09-29", 5.25], ["1998-10-15", 5.0], ["1998-11-17", 4.75], ["1999-06-30", 5.0], ["1999-08-24", 5.25], ["1999-11-16", 5.5], ["2000-02-02", 5.75], ["2000-03-21", 6.0], ["2000-05-16", 6.5], ["2001-01-03", 6.0], ["2001-01-31", 5.5], ["2001-03-20", 5.0], ["2001-04-18", 4.5], ["2001-05-15", 4.0], ["2001-06-27", 3.75], ["2001-08-21", 3.5], ["2001-09-17", 3.0], ["2001-10-02", 2.5], ["2001-11-06", 2.0], ["2001-12-11", 1.75], ["2002-11-06", 1.25], ["2003-06-25", 1.0], ["2004-06-30", 1.25], ["2004-08-10", 1.5], ["2004-09-21", 1.75], ["2004-11-10", 2.0], ["2004-12-14", 2.25], ["2005-02-02", 2.5], ["2005-03-22", 2.75], ["2005-05-03", 3.0], ["2005-06-30", 3.25], ["2005-08-09", 3.5], ["2005-09-20", 3.75], ["2005-11-01", 4.0], ["2005-12-13", 4.25], ["2006-01-31", 4.5], ["2006-03-28", 4.75], ["2006-05-10", 5.0], ["2006-06-29", 5.25], ["2007-09-18", 4.75], ["2007-10-31", 4.5], ["2007-12-11", 4.25], ["2008-01-22", 3.5], ["2008-01-30", 3.0], ["2008-03-18", 2.25], ["2008-04-30", 2.0], ["2008-10-08", 1.5], ["2008-10-29", 1.0], ["2008-12-16", 0.25], ["2015-12-17", 0.5], ["2016-12-15", 0.75], ["2017-03-16", 1.0], ["2017-06-15", 1.25], ["2017-12-14", 1.5], ["2018-03-22", 1.75], ["2018-06-14", 2.0], ["2018-09-27", 2.25], ["2018-12-20", 2.5], ["2019-08-01", 2.25], ["2019-09-19", 2.0], ["2019-10-31", 1.75], ["2020-03-04", 1.25], ["2020-03-16", 0.25], ["2022-03-17", 0.5], ["2022-05-05", 1.0], ["2022-06-16", 1.75], ["2022-07-28", 2.5], ["2022-09-22", 3.25], ["2022-11-03", 4.0], ["2022-12-15", 4.5], ["2023-02-02", 4.75], ["2023-03-23", 5.0], ["2023-05-04", 5.25], ["2023-07-27", 5.5], ["2024-09-19", 5.0], ["2024-11-08", 4.75], ["2024-12-19", 4.5], ["2025-09-18", 4.25], ["2025-10-30", 4.0], ["2025-12-11", 3.75], ["2026-09-17", 4.0]];
+const END_DATE = "2026-10-03";
+// Before 16 Dec 2008 the Fed targeted a single rate (lower = upper); afterwards a 25bp range [upper-0.25, upper].
+const lower = upper.map(([d, v]) => [d, d < "2008-12-16" ? v : Math.max(v - 0.25, 0)]);
+
+// Build one ECharts line series from [[date, value], ...] pairs
+const makeSeries = (name, color, pts) => ({
+  name, type: "line",
+  step: "end",              // hold the old rate flat, then jump on the decision date
+  showSymbol: false,        // no dots, the step shape is enough
+  lineStyle: { color, width: 2.5 }, itemStyle: { color },
+  data: [...pts, [END_DATE, pts[pts.length - 1][1]]]   // extend the last rate to "today"
+});
+
+const chart = echarts.init(document.getElementById("chart"), "dark");   // "dark" built-in theme
+chart.setOption({
+  backgroundColor: "transparent",
+  tooltip: { trigger: "axis", valueFormatter: v => v.toFixed(2) + "%" },  // one tooltip comparing all series
+  legend: { top: 0 },
+  grid: { left: 55, right: 20, top: 40, bottom: 80 },
+  xAxis: { type: "time" },
+  yAxis: { type: "value", axisLabel: { formatter: "{value}%" }, splitLine: { lineStyle: { color: "#334155" } } },
+  dataZoom: [{ type: "inside" }, { type: "slider" }],                     // mouse-wheel zoom + bottom slider
+  toolbox: { feature: { saveAsImage: {}, dataZoom: {} } },                // export PNG / box zoom
+  series: [
+    makeSeries("Upper bound / target", "#38bdf8", upper),
+    makeSeries("Lower bound",          "#a78bfa", lower)
+  ]
+});
+addEventListener("resize", () => chart.resize());   // keep the chart fitted when the window changes
+
+</script>
+</body>
+</html>
