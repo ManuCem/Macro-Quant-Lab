@@ -4,9 +4,11 @@ A personal lab for testing ideas at the intersection of macroeconomics,
 machine learning, and quantitative trading — a space to try things, break
 things, and see what actually holds up.
 
+🌐 **Website: [manucem.github.io/Macro-Quant-Lab](https://manucem.github.io/Macro-Quant-Lab/)** — an index of the live experiments.
+
 ## Featured: was the VIX right about four market shocks?
 
-**[▶ Open the interactive dashboard](https://manucem.github.io/Macro-Quant-Lab/VIX/output/shocks.html)**
+**[▶ Open live dashboard](https://manucem.github.io/Macro-Quant-Lab/VIX/output/shocks.html)**
 
 [![VIX vs realized volatility around four market shocks](VIX/output/shocks_preview.png)](https://manucem.github.io/Macro-Quant-Lab/VIX/output/shocks.html)
 
@@ -40,6 +42,10 @@ python VIX/shocks.py       # the four-shock dashboard (VIX/output/shocks.html)
 Each folder is a self-contained experiment:
 
 - **VIX/** — the VIX vs realized volatility study above.
+  [▶ Open live dashboard](https://manucem.github.io/Macro-Quant-Lab/VIX/output/shocks.html)
+- **Interest_Rates/** — policy rates of the European Central Bank (key rates) and
+  the US Federal Reserve (federal funds target rate).
+  [▶ Open live dashboard](https://manucem.github.io/Macro-Quant-Lab/Interest_Rates/index.html)
 - **bond-30y/** — pulls 30-year Treasury yield data, engineers technical
   features, and predicts next-day direction (up/down), validated with
   time-series cross-validation.
@@ -60,10 +66,6 @@ server's copy of this repo is a manual step, done only after reviewing the
 changes. An automatic `git pull` would mean a compromised repo = code
 execution on the server. The bot also only answers one authorized Telegram
 user, in private chat, with a cooldown between commands.
-
-## Disclaimer
-
-Personal research/learning project. Nothing here is investment advice.
 
 ## License
 
