@@ -167,9 +167,11 @@ def build_figure(vix_aligned, forward_vol_aligned):
     """Draw VIX and realized volatility as two lines on one chart."""
     fig = go.Figure()                     # empty chart
     fig.add_trace(go.Scatter(x=vix_aligned.index, y=vix_aligned,  # line 1: x = dates, y = VIX
-                             name="VIX (implied volatility)"))    # legend label
+                             name="VIX - implied volatility (solid line)",  # legend label; says which line style is the VIX
+                             line=dict(dash="solid")))            # draw the VIX as a solid line
     fig.add_trace(go.Scatter(x=forward_vol_aligned.index, y=forward_vol_aligned,  # line 2: x = dates, y = realized volatility
-                             name=f"Realized volatility (next {FORWARD_HORIZON}d, forward-looking)"))  # legend label
+                             name=f"Realized volatility, next {FORWARD_HORIZON}d - actual (dashed line)",  # legend label; says which line style is the realized volatility
+                             line=dict(dash="dash")))             # draw the realized volatility as a dashed line
     fig.update_layout(
         title=f"{TICKER}: VIX vs subsequent realized volatility",  # chart title
         yaxis_title="Annualized volatility (%)",  # y-axis label
@@ -179,8 +181,8 @@ def build_figure(vix_aligned, forward_vol_aligned):
 
     # RETURNS a plotly Figure object (type plotly.graph_objects.Figure), not yet a file. It holds 2 traces (lines),
     # 7,524 points each:
-    #   fig.data[0].name  -> "VIX (implied volatility)"                              x = dates, y = VIX
-    #   fig.data[1].name  -> "Realized volatility (next 21d, forward-looking)"       x = dates, y = realized volatility %
+    #   fig.data[0].name  -> "VIX - implied volatility (solid line)"                     x = dates, y = VIX, solid line
+    #   fig.data[1].name  -> "Realized volatility, next 21d - actual (dashed line)"      x = dates, y = realized volatility %, dashed line
     #   fig.layout.title.text -> "^GSPC: VIX vs subsequent realized volatility"
     return fig
 
