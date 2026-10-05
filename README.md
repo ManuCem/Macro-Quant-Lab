@@ -51,10 +51,15 @@ More will be added as new ideas come up — this is a lab, not a finished produc
 ## How it runs
 
 It's wired to an n8n + Telegram automation: a Telegram command triggers an n8n
-workflow, which pulls the latest code from this repo, runs the script, sends
-the raw output to an LLM for interpretation, and replies back in Telegram. So
-new experiments here go live the moment they're pushed. A sample of the n8n
-workflow (credentials and IDs scrubbed) is included in this repo for reference.
+workflow, which runs the script on a server, sends the raw output to an LLM for
+interpretation, and replies back in Telegram. A sample of the n8n workflow
+(credentials and IDs scrubbed) is included in this repo for reference.
+
+For security, the workflow **never pulls code automatically**: updating the
+server's copy of this repo is a manual step, done only after reviewing the
+changes. An automatic `git pull` would mean a compromised repo = code
+execution on the server. The bot also only answers one authorized Telegram
+user, in private chat, with a cooldown between commands.
 
 ## Disclaimer
 
