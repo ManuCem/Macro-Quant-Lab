@@ -216,3 +216,22 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Secrets and private data (never commit)
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa*
+id_ed25519*
+*.ppk
+credentials.json
+secrets.json
+*.sqlite
+*.sqlite3
+*.db
+*.parquet
+*.sql
+.claude/settings.local.json
