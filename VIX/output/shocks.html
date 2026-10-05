@@ -165,6 +165,10 @@ const base = () => ({
 const yAxis = (name, extra = {}) => ({ type: "value", name, nameLocation: "middle", nameGap: 42,
   nameTextStyle: { color: K.ink2 }, scale: true, ...axisStyle, ...extra });
 
+// Legend icons drawn by hand so "solid" and "dashed" are obvious (34 x 4 px, same as itemWidth x itemHeight).
+const SOLID_ICON = "path://M0,0 L34,0 L34,4 L0,4 Z";                 // one long bar = solid line
+const DASHED_ICON = "path://M0,0 L9,0 L9,4 L0,4 Z M12.5,0 L21.5,0 L21.5,4 L12.5,4 Z M25,0 L34,0 L34,4 L25,4 Z";  // three short bars = dashed line
+
 // ---- one shock: VIX vs realized (top), gap bars (bottom) ----
 function shockOption(e) {
   // dotted vertical line on day 0
@@ -177,17 +181,20 @@ function shockOption(e) {
     { xAxis: to }];
   const last = e.dates.length - 1;
   return { ...base(),
-    legend: { top: 0, left: 0, textStyle: { color: K.ink2 } },
+    legend: { top: 0, left: 0, itemWidth: 34, itemHeight: 4, itemGap: 28, textStyle: { color: K.ink2 },
+      data: [{ name: "VIX - expected (solid line)", icon: SOLID_ICON },
+             { name: "Realized, next " + DATA.horizon + "d - actual (dashed line)", icon: DASHED_ICON },
+             { name: "Gap (VIX - realized)", icon: "rect" }] },
     grid: [{ left: 56, right: 16, top: 40, height: 270 }, { left: 56, right: 16, top: 340, height: 110 }],
     xAxis: [{ type: "category", gridIndex: 0, data: e.dates, axisLabel: { show: false }, axisLine: axisStyle.axisLine, axisTick: { show: false } },
             { type: "category", gridIndex: 1, data: e.dates, ...axisStyle, splitLine: { show: false } }],
     yAxis: [yAxis("Annualized vol (%)", { gridIndex: 0 }), yAxis("VIX - realized (pts)", { gridIndex: 1, scale: false })],
     dataZoom: [{ type: "inside", xAxisIndex: [0, 1] }],
     series: [
-      { name: "VIX (expected)", type: "line", xAxisIndex: 0, yAxisIndex: 0, data: e.vix, showSymbol: false,
+      { name: "VIX - expected (solid line)", type: "line", xAxisIndex: 0, yAxisIndex: 0, data: e.vix, showSymbol: false,
         lineStyle: { color: e.color, width: 2 }, itemStyle: { color: e.color }, markLine: day0Line,
         markArea: { silent: true, data: [phaseArea("Pre-shock", e.dates[0], e.day0, true), phaseArea("Aftermath", e.day0, e.dates[last], false)] } },
-      { name: "Realized, next " + DATA.horizon + "d (actual)", type: "line", xAxisIndex: 0, yAxisIndex: 0, data: e.realized, showSymbol: false,
+      { name: "Realized, next " + DATA.horizon + "d - actual (dashed line)", type: "line", xAxisIndex: 0, yAxisIndex: 0, data: e.realized, showSymbol: false,
         lineStyle: { color: e.color, width: 2, type: "dashed" }, itemStyle: { color: e.color } },
       // blue bar = VIX too high (overpriced), red bar = VIX too low (underestimated)
       { name: "Gap (VIX - realized)", type: "bar", xAxisIndex: 1, yAxisIndex: 1, data: e.gap, markLine: day0Line,
