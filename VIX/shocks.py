@@ -347,10 +347,11 @@ def chart_data(windows):
 
 def chart_div(chart_id, height):
     """Empty box; ECHARTS_JS draws the chart into it the first time its tab is shown."""
-    box = f'<div class="chart" id="{chart_id}" style="height:{height}px"></div>'  # an empty <div> with an id and a fixed height
+    box = f'<div class="chart" id="{chart_id}" data-h="{height}" style="height:{height}px"></div>'  # an empty <div>: an id, the desktop height (data-h) and a starting height
 
     # RETURNS a str of HTML. chart_div("chart-covid", 480) gives:
-    # '<div class="chart" id="chart-covid" style="height:480px"></div>'
+    # '<div class="chart" id="chart-covid" data-h="480" style="height:480px"></div>'
+    # (data-h = the desktop height; the JavaScript makes some boxes taller on a phone)
     return box
 
 
@@ -362,6 +363,15 @@ const K = DATA.colors;                     // shared ink / grid / diverging colo
 const FONT = "system-ui, -apple-system, 'Segoe UI', sans-serif";
 const fmt1 = v => (v === null || v === undefined) ? "-" : Number(v).toFixed(1);
 
+// ---- phone layout ----
+// narrow = a phone-sized screen. It is re-checked when the window changes, so rotating the phone redraws the charts.
+const narrowMQ = window.matchMedia("(max-width: 640px)");
+const isNarrow = () => narrowMQ.matches;
+const isTouch = window.matchMedia("(pointer: coarse)").matches;   // a finger instead of a mouse
+// Chart box heights (px) on a phone; on desktop each box keeps the height in its data-h attribute.
+const NARROW_H = { "chart-levels": 650, "chart-gap": 390, "chart-sp": 390 };
+function fitHeight(div) { div.style.height = ((isNarrow() && NARROW_H[div.id]) || div.dataset.h) + "px"; }
+
 // Axis look shared by every chart: recessive grid, light axis line.
 const axisStyle = {
   axisLine: { lineStyle: { color: K.axis } }, axisTick: { lineStyle: { color: K.axis } },
@@ -370,10 +380,10 @@ const axisStyle = {
 // Options shared by every chart.
 const base = () => ({
   animation: false, backgroundColor: "transparent", textStyle: { fontFamily: FONT, color: K.ink2 },
-  tooltip: { trigger: "axis", valueFormatter: fmt1, confine: true },
+  tooltip: { trigger: "axis", valueFormatter: fmt1, confine: true, textStyle: { fontSize: isNarrow() ? 12 : 14 } },
   axisPointer: { link: [{ xAxisIndex: "all" }] }
 });
-const yAxis = (name, extra = {}) => ({ type: "value", name, nameLocation: "middle", nameGap: 42,
+const yAxis = (name, extra = {}) => ({ type: "value", name, nameLocation: "middle", nameGap: isNarrow() ? 34 : 42,
   nameTextStyle: { color: K.ink2 }, scale: true, ...axisStyle, ...extra });
 
 // Legend icons drawn by hand so "solid" and "dashed" are obvious (34 x 4 px, same as itemWidth x itemHeight).
@@ -382,6 +392,11 @@ const DASHED_ICON = "path://M0,0 L9,0 L9,4 L0,4 Z M12.5,0 L21.5,0 L21.5,4 L12.5,
 
 // ---- one shock: VIX vs realized (top), gap bars (bottom) ----
 function shockOption(e) {
+  const narrow = isNarrow();
+  // On a phone the 3 legend entries are stacked one per line, so the plots start lower and sit closer to the edges.
+  const L = narrow ? 48 : 56, R = narrow ? 18 : 16;               // left / right margin of the plots
+  const topMain = narrow ? 86 : 40, hMain = narrow ? 222 : 270;   // top plot: start and height
+  const topGap = topMain + hMain + 30, hGap = narrow ? 90 : 110;  // bottom (gap bars) plot
   // dotted vertical line on day 0
   const day0Line = { silent: true, symbol: "none", lineStyle: { color: K.ink, width: 1.5, type: "dotted" },
                      label: { show: false }, data: [{ xAxis: e.day0 }] };
@@ -392,15 +407,19 @@ function shockOption(e) {
     { xAxis: to }];
   const last = e.dates.length - 1;
   return { ...base(),
-    legend: { top: 0, left: 0, itemWidth: 34, itemHeight: 4, itemGap: 28, textStyle: { color: K.ink2 },
+    legend: { top: 0, left: 0, orient: narrow ? "vertical" : "horizontal", itemWidth: narrow ? 28 : 34, itemHeight: 4,
+      itemGap: narrow ? 6 : 28, textStyle: { color: K.ink2, fontSize: 12 },
       data: [{ name: "VIX - expected (solid line)", icon: SOLID_ICON },
              { name: "Realized, next " + DATA.horizon + "d - actual (dashed line)", icon: DASHED_ICON },
              { name: "Gap (VIX - realized)", icon: "rect" }] },
-    grid: [{ left: 56, right: 16, top: 40, height: 270 }, { left: 56, right: 16, top: 340, height: 110 }],
+    grid: [{ left: L, right: R, top: topMain, height: hMain }, { left: L, right: R, top: topGap, height: hGap }],
     xAxis: [{ type: "category", gridIndex: 0, data: e.dates, axisLabel: { show: false }, axisLine: axisStyle.axisLine, axisTick: { show: false } },
-            { type: "category", gridIndex: 1, data: e.dates, ...axisStyle, splitLine: { show: false } }],
+            // alignMin/MaxLabel keep the first and last date from being cut off at the edges of the screen
+            { type: "category", gridIndex: 1, data: e.dates, ...axisStyle, splitLine: { show: false },
+              axisLabel: { color: K.ink2, hideOverlap: true, alignMinLabel: "left", alignMaxLabel: "right" } }],
     yAxis: [yAxis("Annualized vol (%)", { gridIndex: 0 }), yAxis("VIX - realized (pts)", { gridIndex: 1, scale: false })],
-    dataZoom: [{ type: "inside", xAxisIndex: [0, 1] }],
+    // On a touch screen a finger drag over the chart would zoom it instead of scrolling the page, so zoom is mouse-only.
+    dataZoom: isTouch ? [] : [{ type: "inside", xAxisIndex: [0, 1] }],
     series: [
       { name: "VIX - expected (solid line)", type: "line", xAxisIndex: 0, yAxisIndex: 0, data: e.vix, showSymbol: false,
         lineStyle: { color: e.color, width: 2 }, itemStyle: { color: e.color }, markLine: day0Line,
@@ -424,34 +443,44 @@ const dayAxis = (extra = {}) => ({ type: "value", min: -DATA.pre_days, name: "Tr
 // a reference line on the first series only: dotted vertical at day 0 + a solid horizontal one
 const refLines = (yValue, yColor) => ({ markLine: { silent: true, symbol: "none", label: { show: false }, data: [
   { xAxis: 0, lineStyle: { color: K.ink, width: 1.5, type: "dotted" } }, { yAxis: yValue, lineStyle: { color: yColor, width: 1, type: "solid" } }] } });
+const panelTitle = (text, left, top) => ({ text, left, top, textStyle: { color: K.ink2, fontSize: 13, fontWeight: 600 } });
 
 function levelsOption() {
+  const narrow = isNarrow();
   // Same y range on both panels so VIX and realized can be compared by eye.
   const all = DATA.events.flatMap(e => [...e.vix, ...e.realized]).filter(v => v !== null);
   const top = Math.ceil(Math.max(...all) / 10) * 10;
+  const laneY = (gridIndex, name) => yAxis(name, { gridIndex, min: 0, max: top, scale: false });
   return { ...base(),
     legend: { top: 0, left: 0, data: names, textStyle: { color: K.ink2 } },
-    title: [{ text: "VIX (expected)", left: 56, top: 34, textStyle: { color: K.ink2, fontSize: 13, fontWeight: 600 } },
-            { text: "Realized, next " + DATA.horizon + "d (actual)", left: "54%", top: 34, textStyle: { color: K.ink2, fontSize: 13, fontWeight: 600 } }],
-    grid: [{ left: 56, width: "40%", top: 70, height: 250 }, { left: "54%", right: 16, top: 70, height: 250 }],
-    xAxis: [dayAxis({ gridIndex: 0 }), dayAxis({ gridIndex: 1, name: "" })],
-    yAxis: [yAxis("Annualized vol (%)", { gridIndex: 0, min: 0, max: top, scale: false }), yAxis("", { gridIndex: 1, min: 0, max: top, scale: false })],
+    // Desktop: VIX and realized side by side. Phone: stacked, one above the other, so each gets the full width.
+    title: narrow ? [panelTitle("VIX (expected)", 48, 52), panelTitle("Realized, next " + DATA.horizon + "d (actual)", 48, 342)]
+                  : [panelTitle("VIX (expected)", 56, 34), panelTitle("Realized, next " + DATA.horizon + "d (actual)", "54%", 34)],
+    grid: narrow ? [{ left: 48, right: 18, top: 78, height: 200 }, { left: 48, right: 18, top: 368, height: 200 }]
+                 : [{ left: 56, width: "40%", top: 70, height: 250 }, { left: "54%", right: 16, top: 70, height: 250 }],
+    xAxis: narrow ? [dayAxis({ gridIndex: 0, name: "" }), dayAxis({ gridIndex: 1 })]
+                  : [dayAxis({ gridIndex: 0 }), dayAxis({ gridIndex: 1, name: "" })],
+    yAxis: [laneY(0, "Annualized vol (%)"), laneY(1, narrow ? "Annualized vol (%)" : "")],
     series: DATA.events.flatMap(e => [
       lineSeries(e, "vix", { xAxisIndex: 0, yAxisIndex: 0, markLine: day0Marker }),
       lineSeries(e, "realized", { xAxisIndex: 1, yAxisIndex: 1, markLine: day0Marker })]) };
 }
 function gapOption() {
+  const narrow = isNarrow();
   return { ...base(),
     legend: { top: 0, left: 0, data: names, textStyle: { color: K.ink2 } },
-    title: { text: "above 0: VIX overpriced  |  below 0: underestimated", right: 16, top: 2, textStyle: { color: K.muted, fontSize: 12, fontWeight: "normal" } },
-    grid: { left: 56, right: 16, top: 40, height: 260 },
+    // Desktop: the hint sits top-right. Phone: it drops under the (wrapped) legend instead of colliding with it.
+    title: { text: "above 0: VIX overpriced  |  below 0: underestimated", ...(narrow ? { left: 0, top: 46 } : { right: 16, top: 2 }),
+             textStyle: { color: K.muted, fontSize: 12, fontWeight: "normal" } },
+    grid: { left: narrow ? 48 : 56, right: narrow ? 18 : 16, top: narrow ? 76 : 40, height: narrow ? 240 : 260 },
     xAxis: dayAxis(), yAxis: yAxis("VIX - realized (pts)", { scale: false }),
     series: DATA.events.map((e, i) => lineSeries(e, "gap", i === 0 ? refLines(0, K.ink) : {})) };
 }
 function spOption() {
+  const narrow = isNarrow();
   return { ...base(),
     legend: { top: 0, left: 0, data: names, textStyle: { color: K.ink2 } },
-    grid: { left: 56, right: 16, top: 40, height: 260 },
+    grid: { left: narrow ? 48 : 56, right: narrow ? 18 : 16, top: narrow ? 56 : 40, height: narrow ? 260 : 260 },
     xAxis: dayAxis(), yAxis: yAxis("S&P 500 (day -1 = 100)"),
     series: DATA.events.map((e, i) => lineSeries(e, "sp_index", i === 0 ? refLines(100, K.axis) : {})) };
 }
@@ -460,7 +489,17 @@ function spOption() {
 const BUILDERS = { "chart-levels": levelsOption, "chart-gap": gapOption, "chart-sp": spOption };
 DATA.events.forEach(e => BUILDERS["chart-" + e.key] = () => shockOption(e));
 const INSTANCES = {};
-addEventListener("resize", () => Object.values(INSTANCES).forEach(c => c.resize()));
+// Keep charts fitted when the window changes. If the screen crosses the phone/desktop line (e.g. the phone is
+// rotated), resize the box and rebuild the chart with the other layout.
+let wasNarrow = isNarrow();
+addEventListener("resize", () => {
+  const changed = isNarrow() !== wasNarrow;
+  wasNarrow = isNarrow();
+  Object.entries(INSTANCES).forEach(([id, chart]) => {
+    if (changed) { fitHeight(document.getElementById(id)); chart.resize(); chart.setOption(BUILDERS[id](), true); }
+    else { chart.resize(); }
+  });
+});
 """
 
 
@@ -491,6 +530,27 @@ th:first-child, td:first-child { text-align: left; }
 th { color: #52514e; font-weight: 600; }
 .note { color: #52514e; font-size: 12px; margin-top: 8px; }
 .sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; }
+.swipe-hint { display: none; margin: 8px 0 0; font-size: 12px; color: #6e6960; }
+/* Phones: tighter spacing, 2 tiles per row, wrapping table text, finger-sized tabs */
+@media (max-width: 640px) {
+  body { padding: 16px 10px 40px; }
+  h1 { font-size: 19px; }
+  h2 { font-size: 16px; }
+  .panel { padding: 12px; }
+  .tabs button { padding: 12px 10px; font-size: 14px; }
+  .tiles { gap: 8px; }
+  .tile { flex: 1 1 130px; padding: 8px 10px; }
+  .tile .v { font-size: 18px; }
+  th, td { padding: 6px 8px; white-space: normal; font-size: 13px; }
+  th { font-size: 12px; }
+  /* The 9-column dashboard table cannot fit: keep it scrolling sideways, with the shock name pinned */
+  #dashboard th, #dashboard td { white-space: nowrap; }
+  #dashboard th:first-child, #dashboard td:first-child { position: sticky; left: 0; background: #fcfcfb; }
+  /* Phase table (shock tabs): drop the "Days" column and tighten, so Verdict stays on screen */
+  .panel:not(#dashboard) th, .panel:not(#dashboard) td { padding: 6px 5px; }
+  .panel:not(#dashboard) th:nth-child(2), .panel:not(#dashboard) td:nth-child(2) { display: none; }
+  .swipe-hint { display: block; }
+}
 """
 
 JS = """
@@ -501,6 +561,7 @@ function showTab(id) {
   // ECharts can't measure a hidden box, so each chart is created the first
   // time its tab is shown (and just resized on later visits).
   document.querySelectorAll('#' + id + ' .chart').forEach(div => {
+    fitHeight(div);   // taller boxes on a phone
     if (!INSTANCES[div.id]) {
       INSTANCES[div.id] = echarts.init(div);
       INSTANCES[div.id].setOption(BUILDERS[div.id]());
@@ -626,6 +687,7 @@ def dashboard_panel(windows):
     <th>Gap: day 0</th><th>Gap: aftermath</th><th>VIX peak</th>
     <th>Peak realized</th><th>S&P day 0 to low</th></tr>{rows}
   </table></div>
+  <p class="swipe-hint">Swipe the table sideways to see all columns &rarr;</p>
   {chart_div('chart-levels', 340)}
   {chart_div('chart-gap', 320)}
   {chart_div('chart-sp', 320)}
@@ -637,6 +699,7 @@ def dashboard_panel(windows):
     # <section class="panel" id="dashboard" hidden>
     #   <h2>All four shocks together</h2>
     #   <div class="tablewrap"><table> ...header + one row per shock (4 rows)... </table></div>
+    #   <p class="swipe-hint">Swipe the table sideways...</p>     <- visible on phones only
     #   <div class="chart" id="chart-levels" style="height:340px"></div>    <- 3 empty chart boxes;
     #   <div class="chart" id="chart-gap" style="height:320px"></div>       <- the browser draws
     #   <div class="chart" id="chart-sp" style="height:320px"></div>        <- the charts in them

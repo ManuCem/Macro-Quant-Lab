@@ -29,6 +29,27 @@ th:first-child, td:first-child { text-align: left; }
 th { color: #52514e; font-weight: 600; }
 .note { color: #52514e; font-size: 12px; margin-top: 8px; }
 .sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; }
+.swipe-hint { display: none; margin: 8px 0 0; font-size: 12px; color: #6e6960; }
+/* Phones: tighter spacing, 2 tiles per row, wrapping table text, finger-sized tabs */
+@media (max-width: 640px) {
+  body { padding: 16px 10px 40px; }
+  h1 { font-size: 19px; }
+  h2 { font-size: 16px; }
+  .panel { padding: 12px; }
+  .tabs button { padding: 12px 10px; font-size: 14px; }
+  .tiles { gap: 8px; }
+  .tile { flex: 1 1 130px; padding: 8px 10px; }
+  .tile .v { font-size: 18px; }
+  th, td { padding: 6px 8px; white-space: normal; font-size: 13px; }
+  th { font-size: 12px; }
+  /* The 9-column dashboard table cannot fit: keep it scrolling sideways, with the shock name pinned */
+  #dashboard th, #dashboard td { white-space: nowrap; }
+  #dashboard th:first-child, #dashboard td:first-child { position: sticky; left: 0; background: #fcfcfb; }
+  /* Phase table (shock tabs): drop the "Days" column and tighten, so Verdict stays on screen */
+  .panel:not(#dashboard) th, .panel:not(#dashboard) td { padding: 6px 5px; }
+  .panel:not(#dashboard) th:nth-child(2), .panel:not(#dashboard) td:nth-child(2) { display: none; }
+  .swipe-hint { display: block; }
+}
 </style>
 <script>
 /*
@@ -86,7 +107,7 @@ after. S&amp;P 500 and VIX data from Yahoo Finance.</p>
   <h2>Dot-com crash - day 0 = 14 Apr 2000</h2>
   <p class="sub">Worst S&amp;P 500 day of the 2000 sell-off, and the VIX peak of that spring. The bubble deflated slowly: this is the sharpest day inside a ~2.5-year decline that only bottomed in Oct 2002 (see the day 0 to lowest point tile).</p>
   <div class="tiles"><div class="tile"><div class="v">-5.8%</div><div class="l">S&amp;P 500 on day 0</div></div><div class="tile"><div class="v">33.5</div><div class="l">VIX on day 0</div></div><div class="tile"><div class="v">33.5</div><div class="l">VIX peak (day 0)</div></div><div class="tile"><div class="v">26.5</div><div class="l">Peak realized vol after day 0</div></div><div class="tile"><div class="v">-42.7%</div><div class="l">S&amp;P day 0 to lowest point (09 Oct 2002, 622 trading days later)</div></div></div>
-  <div class="chart" id="chart-dotcom" style="height:480px"></div>
+  <div class="chart" id="chart-dotcom" data-h="480" style="height:480px"></div>
   <div class="tablewrap"><table><tr><th>Phase</th><th>Days</th><th>Avg VIX</th><th>Avg realized</th><th>VIX - realized</th><th>Verdict</th></tr><tr><td>Pre-shock</td><td>40</td><td>24.0</td><td>29.4</td><td>-5.4</td><td>VIX underestimated</td></tr><tr><td>Day 0</td><td>1</td><td>33.5</td><td>26.5</td><td>+7.0</td><td>VIX overreacted</td></tr><tr><td>Aftermath</td><td>60</td><td>23.9</td><td>19.1</td><td>+4.8</td><td>VIX overreacted</td></tr></table></div>
   <p class="note">Solid line = VIX (the market's expectation); dashed = the
   volatility that actually followed over the next 21 trading
@@ -98,7 +119,7 @@ after. S&amp;P 500 and VIX data from Yahoo Finance.</p>
   <h2>2008 financial crisis - day 0 = 15 Sep 2008</h2>
   <p class="sub">Lehman Brothers files for bankruptcy. Worse S&amp;P days came later (Oct 2008), but this is the trigger, so the 40 days before it are still relatively calm.</p>
   <div class="tiles"><div class="tile"><div class="v">-4.7%</div><div class="l">S&amp;P 500 on day 0</div></div><div class="tile"><div class="v">31.7</div><div class="l">VIX on day 0</div></div><div class="tile"><div class="v">80.9</div><div class="l">VIX peak (day 48)</div></div><div class="tile"><div class="v">85.4</div><div class="l">Peak realized vol after day 0</div></div><div class="tile"><div class="v">-43.3%</div><div class="l">S&amp;P day 0 to lowest point (09 Mar 2009, 120 trading days later)</div></div></div>
-  <div class="chart" id="chart-gfc" style="height:480px"></div>
+  <div class="chart" id="chart-gfc" data-h="480" style="height:480px"></div>
   <div class="tablewrap"><table><tr><th>Phase</th><th>Days</th><th>Avg VIX</th><th>Avg realized</th><th>VIX - realized</th><th>Verdict</th></tr><tr><td>Pre-shock</td><td>40</td><td>21.9</td><td>35.9</td><td>-14.1</td><td>VIX underestimated</td></tr><tr><td>Day 0</td><td>1</td><td>31.7</td><td>74.0</td><td>-42.3</td><td>VIX underestimated</td></tr><tr><td>Aftermath</td><td>60</td><td>57.0</td><td>68.7</td><td>-11.7</td><td>VIX underestimated</td></tr></table></div>
   <p class="note">Solid line = VIX (the market's expectation); dashed = the
   volatility that actually followed over the next 21 trading
@@ -110,7 +131,7 @@ after. S&amp;P 500 and VIX data from Yahoo Finance.</p>
   <h2>Covid crash - day 0 = 24 Feb 2020</h2>
   <p class="sub">First big panic day after the outbreak in Italy: the biggest one-day VIX jump of the episode. The worst S&amp;P day (16 Mar) came three weeks later.</p>
   <div class="tiles"><div class="tile"><div class="v">-3.4%</div><div class="l">S&amp;P 500 on day 0</div></div><div class="tile"><div class="v">25.0</div><div class="l">VIX on day 0</div></div><div class="tile"><div class="v">82.7</div><div class="l">VIX peak (day 15)</div></div><div class="tile"><div class="v">97.6</div><div class="l">Peak realized vol after day 0</div></div><div class="tile"><div class="v">-30.6%</div><div class="l">S&amp;P day 0 to lowest point (23 Mar 2020, 20 trading days later)</div></div></div>
-  <div class="chart" id="chart-covid" style="height:480px"></div>
+  <div class="chart" id="chart-covid" data-h="480" style="height:480px"></div>
   <div class="tablewrap"><table><tr><th>Phase</th><th>Days</th><th>Avg VIX</th><th>Avg realized</th><th>VIX - realized</th><th>Verdict</th></tr><tr><td>Pre-shock</td><td>40</td><td>14.3</td><td>31.9</td><td>-17.6</td><td>VIX underestimated</td></tr><tr><td>Day 0</td><td>1</td><td>25.0</td><td>92.5</td><td>-67.4</td><td>VIX underestimated</td></tr><tr><td>Aftermath</td><td>60</td><td>44.9</td><td>47.1</td><td>-2.1</td><td>VIX underestimated</td></tr></table></div>
   <p class="note">Solid line = VIX (the market's expectation); dashed = the
   volatility that actually followed over the next 21 trading
@@ -122,7 +143,7 @@ after. S&amp;P 500 and VIX data from Yahoo Finance.</p>
   <h2>2025 tariff shock - day 0 = 03 Apr 2025</h2>
   <p class="sub">First trading day after the &#x27;Liberation Day&#x27; tariff announcement (made after the close on 2 Apr). The S&amp;P fell ~5% and the VIX jumped ~40%.</p>
   <div class="tiles"><div class="tile"><div class="v">-4.8%</div><div class="l">S&amp;P 500 on day 0</div></div><div class="tile"><div class="v">30.0</div><div class="l">VIX on day 0</div></div><div class="tile"><div class="v">52.3</div><div class="l">VIX peak (day 3)</div></div><div class="tile"><div class="v">45.7</div><div class="l">Peak realized vol after day 0</div></div><div class="tile"><div class="v">-7.7%</div><div class="l">S&amp;P day 0 to lowest point (08 Apr 2025, 3 trading days later)</div></div></div>
-  <div class="chart" id="chart-tariffs" style="height:480px"></div>
+  <div class="chart" id="chart-tariffs" data-h="480" style="height:480px"></div>
   <div class="tablewrap"><table><tr><th>Phase</th><th>Days</th><th>Avg VIX</th><th>Avg realized</th><th>VIX - realized</th><th>Verdict</th></tr><tr><td>Pre-shock</td><td>40</td><td>19.8</td><td>32.8</td><td>-13.0</td><td>VIX underestimated</td></tr><tr><td>Day 0</td><td>1</td><td>30.0</td><td>45.7</td><td>-15.7</td><td>VIX underestimated</td></tr><tr><td>Aftermath</td><td>60</td><td>23.5</td><td>14.0</td><td>+9.4</td><td>VIX overreacted</td></tr></table></div>
   <p class="note">Solid line = VIX (the market's expectation); dashed = the
   volatility that actually followed over the next 21 trading
@@ -139,9 +160,10 @@ after. S&amp;P 500 and VIX data from Yahoo Finance.</p>
     <th>Gap: day 0</th><th>Gap: aftermath</th><th>VIX peak</th>
     <th>Peak realized</th><th>S&P day 0 to low</th></tr><tr><td><span class="sw" style="background:#2a78d6"></span>Dot-com crash</td><td>14 Apr 2000</td><td>-5.8%</td><td>-5.4</td><td>+7.0</td><td>+4.8</td><td>33.5 (day 0)</td><td>26.5</td><td>-42.7% (Oct 2002)</td></tr><tr><td><span class="sw" style="background:#eb6834"></span>2008 financial crisis</td><td>15 Sep 2008</td><td>-4.7%</td><td>-14.1</td><td>-42.3</td><td>-11.7</td><td>80.9 (day 48)</td><td>85.4</td><td>-43.3% (Mar 2009)</td></tr><tr><td><span class="sw" style="background:#1baf7a"></span>Covid crash</td><td>24 Feb 2020</td><td>-3.4%</td><td>-17.6</td><td>-67.4</td><td>-2.1</td><td>82.7 (day 15)</td><td>97.6</td><td>-30.6% (Mar 2020)</td></tr><tr><td><span class="sw" style="background:#eda100"></span>2025 tariff shock</td><td>03 Apr 2025</td><td>-4.8%</td><td>-13.0</td><td>-15.7</td><td>+9.4</td><td>52.3 (day 3)</td><td>45.7</td><td>-7.7% (Apr 2025)</td></tr>
   </table></div>
-  <div class="chart" id="chart-levels" style="height:340px"></div>
-  <div class="chart" id="chart-gap" style="height:320px"></div>
-  <div class="chart" id="chart-sp" style="height:320px"></div>
+  <p class="swipe-hint">Swipe the table sideways to see all columns &rarr;</p>
+  <div class="chart" id="chart-levels" data-h="340" style="height:340px"></div>
+  <div class="chart" id="chart-gap" data-h="320" style="height:320px"></div>
+  <div class="chart" id="chart-sp" data-h="320" style="height:320px"></div>
   <p class="note">Gap above 0 = VIX overpriced volatility; below 0 = the market
   underestimated what was coming.</p>
 </section>
@@ -151,6 +173,15 @@ const K = DATA.colors;                     // shared ink / grid / diverging colo
 const FONT = "system-ui, -apple-system, 'Segoe UI', sans-serif";
 const fmt1 = v => (v === null || v === undefined) ? "-" : Number(v).toFixed(1);
 
+// ---- phone layout ----
+// narrow = a phone-sized screen. It is re-checked when the window changes, so rotating the phone redraws the charts.
+const narrowMQ = window.matchMedia("(max-width: 640px)");
+const isNarrow = () => narrowMQ.matches;
+const isTouch = window.matchMedia("(pointer: coarse)").matches;   // a finger instead of a mouse
+// Chart box heights (px) on a phone; on desktop each box keeps the height in its data-h attribute.
+const NARROW_H = { "chart-levels": 650, "chart-gap": 390, "chart-sp": 390 };
+function fitHeight(div) { div.style.height = ((isNarrow() && NARROW_H[div.id]) || div.dataset.h) + "px"; }
+
 // Axis look shared by every chart: recessive grid, light axis line.
 const axisStyle = {
   axisLine: { lineStyle: { color: K.axis } }, axisTick: { lineStyle: { color: K.axis } },
@@ -159,10 +190,10 @@ const axisStyle = {
 // Options shared by every chart.
 const base = () => ({
   animation: false, backgroundColor: "transparent", textStyle: { fontFamily: FONT, color: K.ink2 },
-  tooltip: { trigger: "axis", valueFormatter: fmt1, confine: true },
+  tooltip: { trigger: "axis", valueFormatter: fmt1, confine: true, textStyle: { fontSize: isNarrow() ? 12 : 14 } },
   axisPointer: { link: [{ xAxisIndex: "all" }] }
 });
-const yAxis = (name, extra = {}) => ({ type: "value", name, nameLocation: "middle", nameGap: 42,
+const yAxis = (name, extra = {}) => ({ type: "value", name, nameLocation: "middle", nameGap: isNarrow() ? 34 : 42,
   nameTextStyle: { color: K.ink2 }, scale: true, ...axisStyle, ...extra });
 
 // Legend icons drawn by hand so "solid" and "dashed" are obvious (34 x 4 px, same as itemWidth x itemHeight).
@@ -171,6 +202,11 @@ const DASHED_ICON = "path://M0,0 L9,0 L9,4 L0,4 Z M12.5,0 L21.5,0 L21.5,4 L12.5,
 
 // ---- one shock: VIX vs realized (top), gap bars (bottom) ----
 function shockOption(e) {
+  const narrow = isNarrow();
+  // On a phone the 3 legend entries are stacked one per line, so the plots start lower and sit closer to the edges.
+  const L = narrow ? 48 : 56, R = narrow ? 18 : 16;               // left / right margin of the plots
+  const topMain = narrow ? 86 : 40, hMain = narrow ? 222 : 270;   // top plot: start and height
+  const topGap = topMain + hMain + 30, hGap = narrow ? 90 : 110;  // bottom (gap bars) plot
   // dotted vertical line on day 0
   const day0Line = { silent: true, symbol: "none", lineStyle: { color: K.ink, width: 1.5, type: "dotted" },
                      label: { show: false }, data: [{ xAxis: e.day0 }] };
@@ -181,15 +217,19 @@ function shockOption(e) {
     { xAxis: to }];
   const last = e.dates.length - 1;
   return { ...base(),
-    legend: { top: 0, left: 0, itemWidth: 34, itemHeight: 4, itemGap: 28, textStyle: { color: K.ink2 },
+    legend: { top: 0, left: 0, orient: narrow ? "vertical" : "horizontal", itemWidth: narrow ? 28 : 34, itemHeight: 4,
+      itemGap: narrow ? 6 : 28, textStyle: { color: K.ink2, fontSize: 12 },
       data: [{ name: "VIX - expected (solid line)", icon: SOLID_ICON },
              { name: "Realized, next " + DATA.horizon + "d - actual (dashed line)", icon: DASHED_ICON },
              { name: "Gap (VIX - realized)", icon: "rect" }] },
-    grid: [{ left: 56, right: 16, top: 40, height: 270 }, { left: 56, right: 16, top: 340, height: 110 }],
+    grid: [{ left: L, right: R, top: topMain, height: hMain }, { left: L, right: R, top: topGap, height: hGap }],
     xAxis: [{ type: "category", gridIndex: 0, data: e.dates, axisLabel: { show: false }, axisLine: axisStyle.axisLine, axisTick: { show: false } },
-            { type: "category", gridIndex: 1, data: e.dates, ...axisStyle, splitLine: { show: false } }],
+            // alignMin/MaxLabel keep the first and last date from being cut off at the edges of the screen
+            { type: "category", gridIndex: 1, data: e.dates, ...axisStyle, splitLine: { show: false },
+              axisLabel: { color: K.ink2, hideOverlap: true, alignMinLabel: "left", alignMaxLabel: "right" } }],
     yAxis: [yAxis("Annualized vol (%)", { gridIndex: 0 }), yAxis("VIX - realized (pts)", { gridIndex: 1, scale: false })],
-    dataZoom: [{ type: "inside", xAxisIndex: [0, 1] }],
+    // On a touch screen a finger drag over the chart would zoom it instead of scrolling the page, so zoom is mouse-only.
+    dataZoom: isTouch ? [] : [{ type: "inside", xAxisIndex: [0, 1] }],
     series: [
       { name: "VIX - expected (solid line)", type: "line", xAxisIndex: 0, yAxisIndex: 0, data: e.vix, showSymbol: false,
         lineStyle: { color: e.color, width: 2 }, itemStyle: { color: e.color }, markLine: day0Line,
@@ -213,34 +253,44 @@ const dayAxis = (extra = {}) => ({ type: "value", min: -DATA.pre_days, name: "Tr
 // a reference line on the first series only: dotted vertical at day 0 + a solid horizontal one
 const refLines = (yValue, yColor) => ({ markLine: { silent: true, symbol: "none", label: { show: false }, data: [
   { xAxis: 0, lineStyle: { color: K.ink, width: 1.5, type: "dotted" } }, { yAxis: yValue, lineStyle: { color: yColor, width: 1, type: "solid" } }] } });
+const panelTitle = (text, left, top) => ({ text, left, top, textStyle: { color: K.ink2, fontSize: 13, fontWeight: 600 } });
 
 function levelsOption() {
+  const narrow = isNarrow();
   // Same y range on both panels so VIX and realized can be compared by eye.
   const all = DATA.events.flatMap(e => [...e.vix, ...e.realized]).filter(v => v !== null);
   const top = Math.ceil(Math.max(...all) / 10) * 10;
+  const laneY = (gridIndex, name) => yAxis(name, { gridIndex, min: 0, max: top, scale: false });
   return { ...base(),
     legend: { top: 0, left: 0, data: names, textStyle: { color: K.ink2 } },
-    title: [{ text: "VIX (expected)", left: 56, top: 34, textStyle: { color: K.ink2, fontSize: 13, fontWeight: 600 } },
-            { text: "Realized, next " + DATA.horizon + "d (actual)", left: "54%", top: 34, textStyle: { color: K.ink2, fontSize: 13, fontWeight: 600 } }],
-    grid: [{ left: 56, width: "40%", top: 70, height: 250 }, { left: "54%", right: 16, top: 70, height: 250 }],
-    xAxis: [dayAxis({ gridIndex: 0 }), dayAxis({ gridIndex: 1, name: "" })],
-    yAxis: [yAxis("Annualized vol (%)", { gridIndex: 0, min: 0, max: top, scale: false }), yAxis("", { gridIndex: 1, min: 0, max: top, scale: false })],
+    // Desktop: VIX and realized side by side. Phone: stacked, one above the other, so each gets the full width.
+    title: narrow ? [panelTitle("VIX (expected)", 48, 52), panelTitle("Realized, next " + DATA.horizon + "d (actual)", 48, 342)]
+                  : [panelTitle("VIX (expected)", 56, 34), panelTitle("Realized, next " + DATA.horizon + "d (actual)", "54%", 34)],
+    grid: narrow ? [{ left: 48, right: 18, top: 78, height: 200 }, { left: 48, right: 18, top: 368, height: 200 }]
+                 : [{ left: 56, width: "40%", top: 70, height: 250 }, { left: "54%", right: 16, top: 70, height: 250 }],
+    xAxis: narrow ? [dayAxis({ gridIndex: 0, name: "" }), dayAxis({ gridIndex: 1 })]
+                  : [dayAxis({ gridIndex: 0 }), dayAxis({ gridIndex: 1, name: "" })],
+    yAxis: [laneY(0, "Annualized vol (%)"), laneY(1, narrow ? "Annualized vol (%)" : "")],
     series: DATA.events.flatMap(e => [
       lineSeries(e, "vix", { xAxisIndex: 0, yAxisIndex: 0, markLine: day0Marker }),
       lineSeries(e, "realized", { xAxisIndex: 1, yAxisIndex: 1, markLine: day0Marker })]) };
 }
 function gapOption() {
+  const narrow = isNarrow();
   return { ...base(),
     legend: { top: 0, left: 0, data: names, textStyle: { color: K.ink2 } },
-    title: { text: "above 0: VIX overpriced  |  below 0: underestimated", right: 16, top: 2, textStyle: { color: K.muted, fontSize: 12, fontWeight: "normal" } },
-    grid: { left: 56, right: 16, top: 40, height: 260 },
+    // Desktop: the hint sits top-right. Phone: it drops under the (wrapped) legend instead of colliding with it.
+    title: { text: "above 0: VIX overpriced  |  below 0: underestimated", ...(narrow ? { left: 0, top: 46 } : { right: 16, top: 2 }),
+             textStyle: { color: K.muted, fontSize: 12, fontWeight: "normal" } },
+    grid: { left: narrow ? 48 : 56, right: narrow ? 18 : 16, top: narrow ? 76 : 40, height: narrow ? 240 : 260 },
     xAxis: dayAxis(), yAxis: yAxis("VIX - realized (pts)", { scale: false }),
     series: DATA.events.map((e, i) => lineSeries(e, "gap", i === 0 ? refLines(0, K.ink) : {})) };
 }
 function spOption() {
+  const narrow = isNarrow();
   return { ...base(),
     legend: { top: 0, left: 0, data: names, textStyle: { color: K.ink2 } },
-    grid: { left: 56, right: 16, top: 40, height: 260 },
+    grid: { left: narrow ? 48 : 56, right: narrow ? 18 : 16, top: narrow ? 56 : 40, height: narrow ? 260 : 260 },
     xAxis: dayAxis(), yAxis: yAxis("S&P 500 (day -1 = 100)"),
     series: DATA.events.map((e, i) => lineSeries(e, "sp_index", i === 0 ? refLines(100, K.axis) : {})) };
 }
@@ -249,7 +299,17 @@ function spOption() {
 const BUILDERS = { "chart-levels": levelsOption, "chart-gap": gapOption, "chart-sp": spOption };
 DATA.events.forEach(e => BUILDERS["chart-" + e.key] = () => shockOption(e));
 const INSTANCES = {};
-addEventListener("resize", () => Object.values(INSTANCES).forEach(c => c.resize()));
+// Keep charts fitted when the window changes. If the screen crosses the phone/desktop line (e.g. the phone is
+// rotated), resize the box and rebuild the chart with the other layout.
+let wasNarrow = isNarrow();
+addEventListener("resize", () => {
+  const changed = isNarrow() !== wasNarrow;
+  wasNarrow = isNarrow();
+  Object.entries(INSTANCES).forEach(([id, chart]) => {
+    if (changed) { fitHeight(document.getElementById(id)); chart.resize(); chart.setOption(BUILDERS[id](), true); }
+    else { chart.resize(); }
+  });
+});
 
 function showTab(id) {
   document.querySelectorAll('.panel').forEach(p => p.hidden = (p.id !== id));
@@ -258,6 +318,7 @@ function showTab(id) {
   // ECharts can't measure a hidden box, so each chart is created the first
   // time its tab is shown (and just resized on later visits).
   document.querySelectorAll('#' + id + ' .chart').forEach(div => {
+    fitHeight(div);   // taller boxes on a phone
     if (!INSTANCES[div.id]) {
       INSTANCES[div.id] = echarts.init(div);
       INSTANCES[div.id].setOption(BUILDERS[div.id]());
