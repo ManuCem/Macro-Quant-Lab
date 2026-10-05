@@ -15,12 +15,12 @@
     color-scheme: dark;
   }
   * { box-sizing:border-box; }
-  html { scroll-behavior:smooth; scroll-padding-top:72px; background:#000; }
+  html { scroll-behavior:smooth; scroll-padding-top:72px; background:#000; -webkit-text-size-adjust:100%; text-size-adjust:100%; }
   body { margin:0; background:var(--bg); color:var(--text); font:15px/1.7 "Inter","Segoe UI",system-ui,sans-serif; -webkit-font-smoothing:antialiased; overflow-x:hidden; }
   a { color:var(--accent); text-decoration:none; } a:hover { text-decoration:underline; text-underline-offset:3px; }
   strong, b { font-weight:600; color:var(--text); }
   .muted { color:var(--muted); }
-  .wrap { max-width:860px; margin:0 auto; padding-inline:32px; }
+  .wrap { max-width:860px; margin:0 auto; padding-inline:max(32px, env(safe-area-inset-left,0px)) max(32px, env(safe-area-inset-right,0px)); }
   h2,h3,h4 { margin:0; }
   h3 { font-size:1rem; font-weight:600; letter-spacing:.005em; }
   nav { position:sticky; top:0; padding-top:env(safe-area-inset-top,0px); z-index:10; background:rgba(0,0,0,.78); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); border-bottom:1px solid var(--line); }
@@ -123,13 +123,14 @@
   .lang .tl-top { display:flex; justify-content:space-between; gap:4px 16px; flex-wrap:wrap; }
   .pips { display:flex; gap:4px; margin-top:7px; } .pips i { width:26px; height:2px; background:var(--line2); } .pips i.on { background:var(--accent); }
   .interest { display:flex; gap:16px; margin-bottom:14px; } .interest .ic { font-size:1rem; } .interest p { margin:2px 0 0; color:var(--muted); font-size:.87rem; }
-  footer { border-top:1px solid var(--line); padding-block:28px 48px; font-size:.78rem; color:var(--muted); }
+  footer { border-top:1px solid var(--line); padding-block:28px calc(48px + env(safe-area-inset-bottom,0px)); font-size:.78rem; color:var(--muted); }
   footer .wrap { display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+  .swipe-hint { display:none; margin:8px 0 0; font-size:.74rem; color:var(--faint); }
   .reveal { opacity:0; transform:translateY(8px); transition:opacity .7s ease, transform .7s ease; }
   .reveal.in { opacity:1; transform:none; }
   @media (prefers-reduced-motion: reduce) { .reveal { opacity:1; transform:none; transition:none; } html { scroll-behavior:auto; } }
   @media (max-width: 720px) {
-    .wrap { padding-inline:18px; }
+    .wrap { padding-inline:max(18px, env(safe-area-inset-left,0px)) max(18px, env(safe-area-inset-right,0px)); }
     .hero { padding-block:64px 44px; }
     main section { grid-template-columns:minmax(0,1fr); padding-block:40px; }
     main section > *, main section > .sec-head { grid-column:1 !important; grid-row:auto; position:static; }
@@ -142,6 +143,16 @@
     .brand { display:none; } .links { margin-left:0; flex:1; }
     .bar-row { grid-template-columns:minmax(0,1fr); gap:6px; }
     .cert-body { grid-template-columns:minmax(0,1fr); } .issued { grid-column:1; grid-row:auto; }
+    /* Touch targets: links and buttons were 15-26px tall; give them a ~44px hit area without changing how they look */
+    .btn, .project-head a { position:relative; }
+    .btn::after, .project-head a::after { content:""; position:absolute; inset:-10px -8px; }
+    .chip { padding:11px 0; }
+    .cert-filter { gap:0 20px; }
+    footer a { display:inline-block; padding:12px 0; }
+    /* The dot separators wrap badly on a narrow screen (a dot ends up at the start of a line): use plain spacing */
+    .tags { gap:4px 14px; }
+    .tag + .tag::before { display:none; }
+    .swipe-hint { display:block; }
   }
 </style>
 </head>
@@ -297,6 +308,7 @@
           </tbody>
         </table>
       </div>
+      <p class="swipe-hint">Swipe the table sideways to see all columns &rarr;</p>
       <p class="callout" style="margin-top:18px"><b>Takeaway:</b> the VIX reacts to shocks rather than predicting them. It underestimated the first weeks of 2008 and Covid, then overshot afterwards.</p>
     </div>
 
@@ -469,8 +481,8 @@
   const max = 55;
   document.getElementById("vixBars").innerHTML = vix.map(([n, v, r]) => `
     <div class="bar-row"><span>${n}</span><div class="bar-pair">
-      <div class="bar" style="width:${v / max * 100}%"></div><small>VIX ${v}</small>
-      <div class="bar real" style="width:${r / max * 100}%"></div><small>Realized ${r}</small>
+      <div class="bar" style="width:${v / max * 100}%"></div><small>VIX ${v.toFixed(1)}</small>
+      <div class="bar real" style="width:${r / max * 100}%"></div><small>Realized ${r.toFixed(1)}</small>
     </div></div>`).join("");
 
   // Certifications
@@ -533,7 +545,11 @@
   const links = [...document.querySelectorAll("#navlinks a")];
   const spy = new IntersectionObserver(entries => {
     entries.forEach(e => {
-      if (e.isIntersecting) links.forEach(l => l.classList.toggle("active", l.getAttribute("href") === "#" + e.target.id));
+      if (!e.isIntersecting) return;
+      links.forEach(l => l.classList.toggle("active", l.getAttribute("href") === "#" + e.target.id));
+      // On a phone the nav scrolls sideways: keep the active link centred so it is never off-screen
+      const bar = document.getElementById("navlinks"), active = links.find(l => l.classList.contains("active"));
+      if (active) bar.scrollTo({ left: active.getBoundingClientRect().left - bar.getBoundingClientRect().left + bar.scrollLeft - (bar.clientWidth - active.offsetWidth) / 2, behavior: "smooth" });
     });
   }, { rootMargin: "-45% 0px -50% 0px" });
   document.querySelectorAll("main section[id]").forEach(s => spy.observe(s));
