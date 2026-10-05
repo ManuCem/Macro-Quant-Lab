@@ -173,10 +173,17 @@ def build_figure(vix_aligned, forward_vol_aligned):
                              name=f"Realized volatility, next {FORWARD_HORIZON}d - actual (dashed line)",  # legend label; says which line style is the realized volatility
                              line=dict(dash="dash")))             # draw the realized volatility as a dashed line
     fig.update_layout(
-        title=f"{TICKER}: VIX vs subsequent realized volatility",  # chart title
+        title=dict(text=f"{TICKER}: VIX vs subsequent realized volatility",  # chart title...
+                   x=0, xanchor="left",                   # ...starting at the left edge, so it is not cut off on a narrow screen
+                   font=dict(size=15)),                   # a bit smaller so it fits a phone width
         yaxis_title="Annualized volatility (%)",  # y-axis label
         xaxis_title="Date",                       # x-axis label
         hovermode="x unified",                    # hovering shows both lines' values for that date in one box
+        # Legend BELOW the chart, one entry per line. On the right (the default) the long labels took the whole
+        # width of a phone and squeezed the plot to a sliver.
+        legend=dict(orientation="v", yref="container", y=0, yanchor="bottom", x=0, xanchor="left"),
+        margin=dict(l=56, r=16, t=56, b=120),     # left/right/top/bottom space; the bottom 120px is where the legend sits
+        height=560,                               # tall enough for the plot plus the legend underneath
     )
 
     # RETURNS a plotly Figure object (type plotly.graph_objects.Figure), not yet a file. It holds 2 traces (lines),
@@ -187,9 +194,20 @@ def build_figure(vix_aligned, forward_vol_aligned):
     return fig
 
 
+# JavaScript added to the page. On a touch screen a one-finger drag over the chart would draw a zoom box instead of
+# scrolling the page, which traps the reader; so drag-zoom is switched off for touch (tap to read values still works).
+TOUCH_SCRIPT = """
+if (window.matchMedia('(pointer: coarse)').matches) {
+    Plotly.relayout('{plot_id}', {dragmode: false});
+}
+"""
+
+
 def save_chart(fig):
     """Write the chart to an interactive .html file."""
-    fig.write_html(OUTPUT_PATH)           # saves the chart as a standalone web page you can open in a browser
+    fig.write_html(OUTPUT_PATH,           # saves the chart as a standalone web page you can open in a browser
+                   config={"responsive": True},  # the chart resizes with the window (and when a phone is rotated)
+                   post_script=TOUCH_SCRIPT)      # extra JavaScript that runs once the chart is drawn (see TOUCH_SCRIPT)
     print(f"Chart saved to {OUTPUT_PATH}")  # tell the user where the file is
     # fig.show()                          # alternative: open the chart in the browser right away instead of saving
 

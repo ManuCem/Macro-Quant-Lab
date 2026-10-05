@@ -10,13 +10,23 @@
   p  { margin: 0 0 16px; color: #94a3b8; font-size: 14px; }
   .card { background: #1e293b; border-radius: 12px; padding: 16px; max-width: 1100px; }
   #chart { height: 520px; width: 100%; }
+  .hint-touch { display: none; }
+  @media (pointer: coarse) { .hint-mouse { display: none; } .hint-touch { display: inline; } }
+  /* Phones: less padding around the chart, so it gets more of the screen width */
+  @media (max-width: 640px) {
+    body { padding: 16px 10px; }
+    h1 { font-size: 19px; }
+    p { font-size: 13px; }
+    .card { padding: 8px; border-radius: 10px; }
+    #chart { height: 470px; }
+  }
 </style>
 <!-- Apache ECharts, stored locally in lib/ so the page works offline -->
 <script src="lib/echarts.js"></script>
 </head>
 <body>
 <h1>ECB – Key Interest Rates</h1>
-<p>Deposit facility, main refinancing (MRO) and marginal lending rates, 1999 – Oct 2026. Scroll to zoom, hover to compare. Next decision: 29 Oct 2026.</p>
+<p>Deposit facility, main refinancing (MRO) and marginal lending rates, 1999 – Oct 2026. <span class="hint-mouse">Scroll to zoom, hover to compare.</span><span class="hint-touch">Drag the slider to zoom, tap the chart to compare.</span> Next decision: 29 Oct 2026.</p>
 <div class="card"><div id="chart"></div></div>
 <script>
 // [date effective, deposit facility %, MRO %, marginal lending %]
@@ -33,23 +43,38 @@ const makeSeries = (name, color, pts) => ({
   data: [...pts, [END_DATE, pts[pts.length - 1][1]]]   // extend the last rate to "today"
 });
 
+const isNarrow = () => matchMedia("(max-width: 640px)").matches;   // a phone-sized screen
+const isTouch = matchMedia("(pointer: coarse)").matches;           // a finger instead of a mouse
+const LEGEND_LINES = 3;                                             // legend entries (stacked one per line on a phone)
+
 const chart = echarts.init(document.getElementById("chart"), "dark");   // "dark" built-in theme
-chart.setOption({
+const buildOption = () => {
+  const narrow = isNarrow();
+  return {
   backgroundColor: "transparent",
-  tooltip: { trigger: "axis", valueFormatter: v => v.toFixed(2) + "%" },  // one tooltip comparing all series
-  legend: { top: 0 },
-  grid: { left: 55, right: 20, top: 40, bottom: 80 },
-  xAxis: { type: "time" },
+  tooltip: { trigger: "axis", valueFormatter: v => v.toFixed(2) + "%", confine: true, textStyle: { fontSize: narrow ? 12 : 14 } },  // one tooltip comparing all series
+  legend: { top: 0, left: 0, orient: narrow ? "vertical" : "horizontal", itemGap: narrow ? 6 : 10, textStyle: { fontSize: narrow ? 12 : 14 } },
+  grid: { left: narrow ? 44 : 55, right: narrow ? 14 : 20, top: narrow ? 14 + 22 * LEGEND_LINES : 40, bottom: isTouch ? 70 : 80 },
+  xAxis: { type: "time", axisLabel: { hideOverlap: true } },
   yAxis: { type: "value", axisLabel: { formatter: "{value}%" }, splitLine: { lineStyle: { color: "#334155" } } },
-  dataZoom: [{ type: "inside" }, { type: "slider" }],                     // mouse-wheel zoom + bottom slider
-  toolbox: { feature: { saveAsImage: {}, dataZoom: {} } },                // export PNG / box zoom
+  // Mouse: wheel zoom + bottom slider. Touch: slider only, because an "inside" zoom would capture the finger and stop the page scrolling.
+  dataZoom: isTouch ? [{ type: "slider", height: 24, bottom: 10, handleSize: "140%" }] : [{ type: "inside" }, { type: "slider" }],
+  toolbox: narrow ? { show: false } : { feature: { saveAsImage: {}, dataZoom: {} } },   // export PNG / box zoom (hidden on a phone: it collided with the legend)
   series: [
     makeSeries("Deposit facility",       "#38bdf8", col(1)),
     makeSeries("Main refinancing (MRO)", "#34d399", col(2)),
     makeSeries("Marginal lending",       "#f59e0b", col(3))
   ]
+  };
+};
+chart.setOption(buildOption());
+let wasNarrow = isNarrow();
+addEventListener("resize", () => {   // keep the chart fitted when the window changes
+  const changed = isNarrow() !== wasNarrow;
+  wasNarrow = isNarrow();
+  chart.resize();
+  if (changed) chart.setOption(buildOption(), true);   // rotated across the phone/desktop line: rebuild with the other layout
 });
-addEventListener("resize", () => chart.resize());   // keep the chart fitted when the window changes
 
 </script>
 </body>
