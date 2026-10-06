@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Macro Quant Lab</title>
+<title>Interest rates &amp; Phillips curve - Macro Quant Lab</title>
 <style>
   /* Colours as tokens: light by default, dark when the viewer's system is dark */
   :root {
@@ -21,7 +21,11 @@
          font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
 
   /* One centred column; the side padding keeps a gutter on phones */
-  main { max-width: 760px; margin: 0 auto; padding: 56px 20px 40px; }
+  main { max-width: 760px; margin: 0 auto; padding: 40px 20px 40px; }
+
+  .back { display: inline-block; padding: 10px 8px 10px 0; margin-bottom: 18px; color: var(--ink-2);
+          text-decoration: none; font-size: 15px; }
+  .back:hover { color: var(--ink); text-decoration: underline; }
 
   h1 { font-size: 32px; line-height: 1.2; margin: 0 0 8px; letter-spacing: -0.01em; }
   .lead { margin: 0 0 40px; color: var(--ink-2); max-width: 56ch; }
@@ -40,40 +44,36 @@
   .card .go { margin-top: auto; padding-top: 14px; font-weight: 600; color: var(--ink); }
   .card:hover .go span { display: inline-block; transform: translateX(4px); }
   .go span { transition: transform .15s; }
-
-  footer { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--border);
-           color: var(--ink-2); font-size: 14px; }
-  footer a { color: inherit; display: inline-block; padding: 12px 4px; margin: -12px -4px; }  /* bigger tap area, same look */
 </style>
 </head>
 <body>
 <main>
-  <h1>Macro Quant Lab</h1>
-  <p class="lead">A learning lab for macroeconomics, machine learning and quantitative
-     trading. Pick an experiment below.</p>
+  <!-- ../index.html = the home page, one folder up -->
+  <a class="back" href="../index.html">&larr; Macro Quant Lab</a>
 
-  <nav class="cards" aria-label="Experiments">
-    <!-- Card 1: goes straight to the VIX dashboard -->
-    <a class="card" href="VIX/output/shocks.html" style="--accent:#2a78d6">
-      <h2>VIX vs realized volatility</h2>
-      <p>Was the VIX right? Its forecast against the volatility that actually followed,
-         around the dot-com crash, 2008, Covid and the 2025 tariff shock.</p>
-      <span class="go">Open dashboard <span aria-hidden="true">&rarr;</span></span>
+  <h1>Interest rates &amp; Phillips curve</h1>
+  <p class="lead">Policy rates of the two biggest central banks, and how US inflation and unemployment moved with interest rates in 2008 and Covid.</p>
+
+  <nav class="cards" aria-label="Central banks">
+    <!-- ecb_rates.html and fed_rates.html sit in this same folder -->
+    <a class="card" href="ecb_rates.html" style="--accent:#2a78d6">
+      <h2>ECB</h2>
+      <p>European Central Bank: the key interest rates.</p>
+      <span class="go">Open ECB rates <span aria-hidden="true">&rarr;</span></span>
     </a>
 
-    <!-- Card 2: goes to a second menu with the ECB and Fed pages -->
-    <a class="card" href="Rates_and_Phillips/index.html" style="--accent:#eb6834">
-      <h2>Interest rates &amp; Phillips curve</h2>
-      <p>ECB and Fed policy rates, and whether near-zero rates brought a recovery in
-         2008 and Covid (Phillips curve view).</p>
-      <span class="go">Open the section <span aria-hidden="true">&rarr;</span></span>
+    <a class="card" href="fed_rates.html" style="--accent:#1baf7a">
+      <h2>Federal Reserve</h2>
+      <p>US Federal Reserve: the federal funds target rate.</p>
+      <span class="go">Open Fed rates <span aria-hidden="true">&rarr;</span></span>
     </a>
 
+    <a class="card" href="rates_phillips.html" style="--accent:#eb6834">
+      <h2>Rates &amp; the Phillips curve</h2>
+      <p>Did low interest rates bring the recovery? Fed funds, unemployment and inflation in 2008 and Covid.</p>
+      <span class="go">Open the analysis <span aria-hidden="true">&rarr;</span></span>
+    </a>
   </nav>
-
-  <footer>
-    Code on <a href="https://github.com/ManuCem/Macro-Quant-Lab">GitHub</a>.
-  </footer>
 </main>
 </body>
 </html>

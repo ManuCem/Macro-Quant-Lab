@@ -43,9 +43,10 @@ Each folder is a self-contained experiment:
 
 - **VIX/** — the VIX vs realized volatility study above.
   [▶ Open live dashboard](https://manucem.github.io/Macro-Quant-Lab/VIX/output/shocks.html)
-- **Interest_Rates/** — policy rates of the European Central Bank (key rates) and
-  the US Federal Reserve (federal funds target rate).
-  [▶ Open live dashboard](https://manucem.github.io/Macro-Quant-Lab/Interest_Rates/index.html)
+- **Rates_and_Phillips/** — policy rates of the European Central Bank (key rates) and
+  the US Federal Reserve (federal funds target rate), plus the US Phillips curve
+  (Phillips curve view): did near-zero rates bring a recovery in 2008 and Covid?
+  [▶ Open live dashboard](https://manucem.github.io/Macro-Quant-Lab/Rates_and_Phillips/index.html)
 - **bond-30y/** — pulls 30-year Treasury yield data, engineers technical
   features, and predicts next-day direction (up/down), validated with
   time-series cross-validation.

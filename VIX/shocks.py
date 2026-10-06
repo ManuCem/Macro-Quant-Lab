@@ -44,8 +44,8 @@ from volatility import (                  # reuse the data helpers so both scrip
 # ===========================================================================
 
 OUTPUT_PATH = Path(__file__).parent / "output" / "shocks.html"  # where the web page is saved
-# Apache ECharts, reused from the Interest_Rates/ folder; embedded in the page so it stays one standalone file.
-ECHARTS_PATH = Path(__file__).parent.parent / "Interest_Rates" / "lib" / "echarts.js"  # the chart library file (one folder up, in Interest_Rates/lib/)
+# Apache ECharts, reused from the Rates_and_Phillips/ folder; embedded in the page so it stays one standalone file.
+ECHARTS_PATH = Path(__file__).parent.parent / "Rates_and_Phillips" / "lib" / "echarts.js"  # the chart library file (one folder up, in Rates_and_Phillips/lib/)
 
 PRE_DAYS = 40                             # trading days shown before day 0 (~2 months of "before")
 POST_DAYS = 60                            # trading days shown after day 0 (~3 months of "after")
