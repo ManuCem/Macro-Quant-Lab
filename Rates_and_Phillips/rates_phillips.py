@@ -275,7 +275,9 @@ function phillips(ep, narrow) {                                 // unemployment 
 function recovery(narrow) {                                     // the two crises overlaid, counted from the unemployment peak
   const o = base(narrow);
   o.xAxis = ax({type: "value", name: "Months since unemployment peaked", nameLocation: "middle", nameGap: 28});
-  o.yAxis = ax({type: "value", min: 0});                      // no axis title: the text above the chart says "points above the pre-crisis low"
+  o.grid.left = narrow ? 58 : 70;                                // extra room on the left so the rotated axis title is not cut off
+  o.yAxis = ax({type: "value", min: 0, name: "Unemployment above its pre-crisis level (points)", nameLocation: "middle",
+                nameRotate: 90, nameGap: narrow ? 36 : 44, nameTextStyle: {color: INK_2, fontSize: narrow ? 10 : 12}});
   o.series = DATA.episodes.map(ep => ({name: ep.name, type: "line", showSymbol: false, data: ep.recovery.map((v, i) => [i, v]),
     lineStyle: {color: ep.color, width: 3}, itemStyle: {color: ep.color},
     markLine: {silent: true, symbol: "none", lineStyle: {color: ep.color, type: "dotted"}, label: {show: false}, data: [{yAxis: 0.5}]}}));
@@ -364,7 +366,7 @@ After 2008 the answer was slow and weak. After Covid it was fast, but inflation 
 <div class="scroll"><table><tr><th>Crisis</th><th>Peak unemployment</th><th>Months to recover</th><th>Months at floor</th><th>Peak inflation</th><th>Lowest real rate</th></tr>{body}</table></div>
 <p class="note">Swipe the table sideways if it does not fit.</p>
 <h2>The recovery race</h2>
-<p class="why">Unemployment above its pre-crisis low, counted in months from each crisis's peak. The dotted line is "recovered" (within 0.5 points of normal).</p>
+<p class="why"><b>How to read it:</b> the vertical axis is how many percentage points the unemployment rate is above where it was before the crisis. Example: 2008 starts at 5.6 because unemployment hit 10.0% against a 4.4% low. The horizontal axis is months since unemployment peaked, so both crises start at month 0. The faster a line falls, the faster the recovery. The dotted line at 0.5 means "recovered" (within half a point of normal).</p>
 <div class="chart" id="recovery"></div>
 </section>"""
 
