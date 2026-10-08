@@ -237,3 +237,6 @@ secrets.json
 *.parquet
 *.sql
 .claude/settings.local.json
+
+# Unrelated project kept locally, never tracked
+Cafe/
