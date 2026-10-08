@@ -37,6 +37,35 @@ python VIX/volatility.py   # 30 years of VIX vs realized volatility + bias/RMSE
 python VIX/shocks.py       # the four-shock dashboard (VIX/output/shocks.html)
 ```
 
+## Featured: did near-zero interest rates bring a recovery?
+
+**[▶ Open live dashboard](https://manucem.github.io/Macro-Quant-Lab/Rates_and_Phillips/rates_phillips.html)**
+
+[![Recovery race: unemployment after the 2008 crisis and Covid](Rates_and_Phillips/rates_phillips_preview.png)](https://manucem.github.io/Macro-Quant-Lab/Rates_and_Phillips/rates_phillips.html)
+
+The Phillips curve says unemployment and inflation trade off; the Fed's tool for
+moving along it is the interest rate. Using monthly US data from FRED (unemployment,
+core CPI inflation, Fed funds rate), this compares how the economy recovered after
+the 2008 crisis and Covid, with the Phillips curve coloured by the Fed funds rate and
+the real rate (Fed funds minus inflation).
+
+**Takeaway:** cheap money was slow in 2008 and overshot in 2020-22.
+
+| Crisis | Peak unemployment | Months to recover* | Months at floor** | Peak core inflation | Lowest real rate |
+|---|---|---|---|---|---|
+| 2008 crisis | 10.0% | 75 | 85 | 2.9% | −2.2% |
+| Covid | 14.8% | 20 | 24 | 6.6% | −6.4% |
+
+\* within 0.5 points of the pre-crisis low, counted from the unemployment peak.
+\*\* Fed funds rate at 0.25% or less.
+
+Run it yourself:
+
+```bash
+pip install pandas statsmodels
+python Rates_and_Phillips/rates_phillips.py   # downloads from FRED (no API key) and writes rates_phillips.html
+```
+
 ## What's here
 
 Each folder is a self-contained experiment:
@@ -44,8 +73,8 @@ Each folder is a self-contained experiment:
 - **VIX/** — the VIX vs realized volatility study above.
   [▶ Open live dashboard](https://manucem.github.io/Macro-Quant-Lab/VIX/output/shocks.html)
 - **Rates_and_Phillips/** — policy rates of the European Central Bank (key rates) and
-  the US Federal Reserve (federal funds target rate), plus the US Phillips curve
-  (Phillips curve view): did near-zero rates bring a recovery in 2008 and Covid?
+  the US Federal Reserve (federal funds target rate), plus the interest rates and
+  Phillips curve study above (2008 and Covid).
   [▶ Open live dashboard](https://manucem.github.io/Macro-Quant-Lab/Rates_and_Phillips/index.html)
 - **bond-30y/** — pulls 30-year Treasury yield data, engineers technical
   features, and predicts next-day direction (up/down), validated with

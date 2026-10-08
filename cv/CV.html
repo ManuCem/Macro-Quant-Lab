@@ -109,6 +109,23 @@
   .aws .layer { grid-row:span 2; font-size:.64rem; text-transform:uppercase; letter-spacing:.12em; color:var(--faint); padding-top:4px; }
   .aws b { font-weight:500; }
   .aws span:last-child { color:var(--muted); }
+  .glance { margin-bottom:44px; }
+  .glance h3 { font-size:.72rem !important; font-weight:500; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
+  .g-row { display:grid; grid-template-columns:minmax(0,1fr) 190px; gap:8px 28px; align-items:center; padding:22px 0; border-top:1px solid var(--line); }
+  .g-row p { margin:4px 0 0; color:var(--muted); font-size:.87rem; line-height:1.55; }
+  .g-row .eyebrow { margin-bottom:2px; }
+  .g-row .tags { margin-top:10px; }
+  .g-row .g-links { margin-top:8px; font-size:.82rem; display:flex; gap:18px; }
+  .g-note { margin:6px 0 0; padding-top:16px; border-top:1px solid var(--line); color:var(--faint); font-size:.82rem; line-height:1.6; }
+  .g-chart svg { width:100%; height:auto; display:block; }
+  .g-chart .t { font-size:8.5px; fill:var(--muted); } .g-chart .ax { stroke:var(--line2); stroke-width:1; }
+  .g-chart .b1 { fill:var(--accent); } .g-chart .b2 { fill:var(--muted); opacity:.55; }
+  .g-chart .c1, .g-chart .c2 { fill:none; stroke-width:2; } .g-chart .c1 { stroke:var(--accent); } .g-chart .c2 { stroke:var(--good); }
+  .g-chart .c1t { fill:var(--accent); } .g-chart .c2t { fill:var(--good); }
+  .g-key { display:flex; gap:14px; font-size:.7rem; color:var(--muted); margin-top:2px; }
+  .g-key i { display:inline-block; width:8px; height:8px; margin-right:6px; } .g-key .k1 { background:var(--accent); } .g-key .k2 { background:var(--muted); opacity:.55; }
+  .g-flow { display:flex; flex-wrap:wrap; align-items:center; gap:4px 6px; font-size:.74rem; } .g-flow i { font-style:normal; color:var(--accent); }
+  .g-flow span { border:1px solid var(--line2); padding:1px 7px; color:var(--text); }
   .skills { display:grid; }
   .skill-group { padding:16px 0; border-top:1px solid var(--line); } .skill-group:first-child { border-top:0; padding-top:0; }
   .skill-group h3 { font-size:.95rem; } .skill-group .tags { margin-top:6px; font-size:.84rem; }
@@ -140,6 +157,8 @@
     .tl-item .date, .tl-item .card, .tl-item .tl-body, .edu > h3 { grid-column:1; }
     .tl-item .date { margin-bottom:6px; }
     .grid-2, .aws-grid { grid-template-columns:minmax(0,1fr); }
+    .g-row { grid-template-columns:minmax(0,1fr); }
+    .g-chart { max-width:320px; }
     .brand { display:none; } .links { margin-left:0; flex:1; }
     .bar-row { grid-template-columns:minmax(0,1fr); gap:6px; }
     .cert-body { grid-template-columns:minmax(0,1fr); } .issued { grid-column:1; grid-row:auto; }
@@ -269,136 +288,47 @@
 <section id="projects" class="wrap">
   <div class="sec-head reveal"><span class="num">04</span><h2>Projects</h2></div>
 
-  <!-- Macro Quant Lab -->
-  <article class="card project reveal" data-tabs>
-    <div class="project-head">
+  <!-- Projects: three short rows -->
+  <div class="glance reveal">
+    <div class="g-row">
       <div>
-        <div class="eyebrow">Personal research lab · MIT licence</div>
-        <h3 style="font-size:1.35rem;margin-top:4px">Macro Quant Lab</h3>
-        <p class="muted">Experiments on how macroeconomics and machine learning meet quantitative trading. The whole lab is automated end to end with a Telegram bot and an n8n workflow.</p>
+        <div class="eyebrow">Macro Quant Lab · Personal research</div>
+        <b>VIX vs realized volatility</b>
+        <p>Was the VIX right in four market shocks? Each day's VIX, the market's ~30-day volatility forecast, is compared with the volatility that actually followed over the next 21 trading days, around the dot-com crash, 2008, Covid and the 2025 tariffs. The correlation is ~0.7 and the VIX sits above realized volatility on ~84% of days (the price of insurance), but it underestimated 2008 and Covid.</p>
+        <div class="tags"><span class="tag">Python</span><span class="tag">pandas</span><span class="tag">yfinance</span><span class="tag">ECharts</span></div>
+        <p class="g-links"><a href="https://manucem.github.io/Macro-Quant-Lab/VIX/output/shocks.html" target="_blank" rel="noopener">Dashboard ↗</a> <a href="https://github.com/ManuCem/Macro-Quant-Lab" target="_blank" rel="noopener">Repository ↗</a></p>
       </div>
-      <div class="cta">
-        <a class="btn" href="https://github.com/ManuCem/Macro-Quant-Lab" target="_blank" rel="noopener">Repository ↗</a>
-        <a class="btn primary" href="https://manucem.github.io/Macro-Quant-Lab/VIX/output/shocks.html" target="_blank" rel="noopener">Live dashboard ↗</a>
-      </div>
+      <div class="g-chart"><svg viewBox="0 0 190 76" role="img" aria-label="Average VIX against average realized volatility in four shocks"><rect class="b1" x="10" y="33.1" width="16" height="24.9"/><rect class="b2" x="28" y="36.3" width="16" height="21.7"/><text class="t" x="27" y="71" text-anchor="middle">Dot-com</text><rect class="b1" x="55" y="10.1" width="16" height="47.9"/><rect class="b2" x="73" y="6.0" width="16" height="52.0"/><text class="t" x="72" y="71" text-anchor="middle">2008</text><rect class="b1" x="100" y="17.4" width="16" height="40.6"/><rect class="b2" x="118" y="10.9" width="16" height="47.1"/><text class="t" x="117" y="71" text-anchor="middle">Covid</text><rect class="b1" x="145" y="30.1" width="16" height="27.9"/><rect class="b2" x="163" y="36.6" width="16" height="21.4"/><text class="t" x="162" y="71" text-anchor="middle">2025</text></svg><div class="g-key"><span><i class="k1"></i>VIX</span><span><i class="k2"></i>Realized</span></div></div>
     </div>
-
-    <div class="tabs" role="tablist">
-      <button class="tab" role="tab" aria-selected="true" data-tab="vix">VIX study</button>
-      <button class="tab" role="tab" aria-selected="false" data-tab="experiments">Experiments</button>
-      <button class="tab" role="tab" aria-selected="false" data-tab="automation">Automation</button>
-    </div>
-
-    <div class="panel" data-panel="vix">
-      <p style="margin-top:0"><b>Was the VIX right about four market shocks?</b> The VIX is the market's ~30-day volatility forecast, built from S&amp;P 500 option prices. The study compares each day's VIX with the volatility that actually followed over the next 21 trading days, across the dot-com crash, 2008, Covid and the 2025 tariff shock.</p>
-      <div class="grid-2" style="margin-bottom:18px">
-        <div class="mini"><h4>~0.7 correlation</h4><p>The VIX tracks realized volatility well.</p></div>
-        <div class="mini"><h4>Above realized on ~84% of days</h4><p>+3.8 pts on average: the price of insurance.</p></div>
+    <div class="g-row">
+      <div>
+        <div class="eyebrow">Macro Quant Lab · Macro &amp; interest rates</div>
+        <b>Interest rates &amp; the Phillips curve</b>
+        <p>Did near-zero rates bring a recovery? Monthly US data from FRED (unemployment, core inflation, Fed funds rate) compares 2008 and Covid. After 2008 unemployment needed 75 months to recover, with rates at the floor for 85. After Covid it took 20, but core inflation then hit 6.6% while the real rate fell to about −6%.</p>
+        <div class="tags"><span class="tag">Python</span><span class="tag">pandas</span><span class="tag">statsmodels</span><span class="tag">FRED</span><span class="tag">ECharts</span></div>
+        <p class="g-links"><a href="https://manucem.github.io/Macro-Quant-Lab/Rates_and_Phillips/rates_phillips.html" target="_blank" rel="noopener">Dashboard ↗</a> <a href="https://github.com/ManuCem/Macro-Quant-Lab" target="_blank" rel="noopener">Repository ↗</a></p>
       </div>
-      <div class="legend"><span><i style="background:var(--accent)"></i>Avg VIX</span><span><i style="background:var(--muted);opacity:.55"></i>Avg realized vol</span></div>
-      <div class="bars" id="vixBars"></div>
-      <div class="table-wrap" style="margin-top:22px">
-        <table>
-          <thead><tr><th>Episode</th><th class="num">Avg VIX</th><th class="num">Avg realized</th><th class="num">VIX − realized</th><th>Market</th><th class="num">S&amp;P, day 0 to low</th></tr></thead>
-          <tbody>
-            <tr><td>Dot-com (2000–02)</td><td class="num">25.4</td><td class="num">22.1</td><td class="num pos">+3.3</td><td>Slightly overreacted</td><td class="num">−42.7%</td></tr>
-            <tr><td>2008 crisis</td><td class="num">48.8</td><td class="num">53.0</td><td class="num neg">−4.2</td><td>Underestimated</td><td class="num">−43.3%</td></tr>
-            <tr><td>Covid 2020</td><td class="num">41.4</td><td class="num">48.0</td><td class="num neg">−6.6</td><td>Underestimated</td><td class="num">−30.6%</td></tr>
-            <tr><td>Tariff shock (2025)</td><td class="num">28.4</td><td class="num">21.8</td><td class="num pos">+6.6</td><td>Overreacted</td><td class="num">−7.7%</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <p class="swipe-hint">Swipe the table sideways to see all columns &rarr;</p>
-      <p class="callout" style="margin-top:18px"><b>Takeaway:</b> the VIX reacts to shocks rather than predicting them. It underestimated the first weeks of 2008 and Covid, then overshot afterwards.</p>
+      <div class="g-chart"><svg viewBox="0 0 190 76" role="img" aria-label="Unemployment above its pre-crisis level, months since the peak: 2008 takes 75 months, Covid 20">
+  <line class="ax" x1="8" y1="58" x2="182" y2="58"/>
+  <polyline class="c1" points="8.0,32.2 12.2,33.2 16.5,32.7 20.7,35.0 25.0,35.0 29.2,36.4 33.5,36.4 37.7,36.8 42.0,37.8 46.2,40.1 50.4,40.5 54.7,40.5 58.9,42.4 63.2,41.4 67.4,43.3 71.7,44.7 75.9,45.1 80.1,47.9 84.4,49.7 88.6,49.7 92.9,52.0 97.1,52.0 101.4,53.4 105.6,54.3 109.9,55.2 114.1,56.2 118.3,54.8 122.6,56.2 126.8,55.7 131.1,56.6 135.3,58.0 139.6,58.5 143.8,58.9 148.0,59.8 152.3,59.8 156.5,60.8 160.8,60.8 165.0,59.8 169.3,61.2 173.5,61.2 177.8,61.7"/>
+  <polyline class="c2" points="8.0,6.0 12.2,27.2 16.5,42.4 20.7,44.7 25.0,46.0 29.2,49.3 33.5,53.4 37.7,55.7 42.0,57.1 46.2,58.0 50.4,57.5 54.7,58.0 58.9,58.5 63.2,58.0 67.4,56.2 71.7,57.1 75.9,56.2 80.1,54.8 84.4,55.2 88.6,55.7 92.9,54.8 97.1,54.3 101.4,53.4 105.6,53.9 109.9,54.3 114.1,55.2"/>
+  <text x="8" y="72" class="t">months since peak &#8594;</text>
+  <text x="182" y="14" class="t c1t" text-anchor="end">2008: 75 months</text>
+  <text x="182" y="26" class="t c2t" text-anchor="end">Covid: 20 months</text>
+</svg></div>
     </div>
-
-    <div class="panel" data-panel="experiments" hidden>
-      <p style="margin-top:0">Each folder in the repo is a self-contained experiment:</p>
-      <div class="grid-2">
-        <div class="mini"><h4>VIX/</h4><p>30 years of VIX vs realized volatility, with bias and RMSE, plus the four-shock interactive dashboard.</p></div>
-        <div class="mini"><h4>bond-30y/</h4><p>Pulls 30-year Treasury yield data, builds technical features and predicts next-day direction (up/down), validated with time-series cross-validation.</p></div>
-        <div class="mini"><h4>sp500/</h4><p>The same approach applied to the S&amp;P 500 index, with added volume and Bollinger Band features.</p></div>
-        <div class="mini"><h4>More to come</h4><p>A lab, not a finished product. New ideas are added as they come up.</p></div>
-      </div>
-      <div class="tags"><span class="tag">Python</span><span class="tag">yfinance</span><span class="tag">pandas</span><span class="tag">NumPy</span><span class="tag">Plotly</span><span class="tag">Time-series CV</span></div>
-    </div>
-
-    <div class="panel" data-panel="automation" hidden>
-      <p style="margin-top:0">A Telegram command triggers an n8n workflow that runs the latest code and replies with an LLM-written interpretation, so new experiments go live as soon as they're pushed.</p>
-      <div class="flow">
-        <span class="node">Telegram command</span><span class="arrow">→</span>
-        <span class="node">n8n workflow</span><span class="arrow">→</span>
-        <span class="node">Pull latest code</span><span class="arrow">→</span>
-        <span class="node">Run script</span><span class="arrow">→</span>
-        <span class="node">LLM interpretation</span><span class="arrow">→</span>
-        <span class="node">Reply in Telegram</span>
-      </div>
-      <div class="tags"><span class="tag">n8n</span><span class="tag">Telegram Bot API</span><span class="tag">LLM</span><span class="tag">GitHub</span></div>
-    </div>
-  </article>
-
-  <!-- AWS Pipeline -->
-  <article class="card project reveal" data-tabs>
-    <div class="project-head">
+    <div class="g-row">
       <div>
         <div class="eyebrow">Cloud data engineering · Machine learning</div>
-        <h3 style="font-size:1.35rem;margin-top:4px">Predictive Pricing – AWS Data Pipeline</h3>
-        <p class="muted">An automated AWS pipeline that turns messy, noisy data into an auditable pricing model, using Python and a SageMaker XGBoost model for asset valuation. It covers data engineering, schema reconciliation, hedonic pricing and cost control.</p>
+        <b>Predictive Pricing on AWS</b>
+        <p>An automated pipeline that turns 10 messy CSV feeds (the Amazon Laptop Messy Dataset) into a Parquet data lake and a SageMaker XGBoost pricing model. Python and regex clean the data on EC2, Glue enforces types and the catalog, and Athena scans about 90% less data. A governance tool I wrote removes idle resources to keep costs under control.</p>
+        <div class="tags"><span class="tag">AWS</span><span class="tag">SageMaker</span><span class="tag">XGBoost</span><span class="tag">Glue</span><span class="tag">Athena</span><span class="tag">FinOps</span></div>
+        <p class="g-links"><a href="https://github.com/ManuCem/End-to-End-Quantitative-Pricing-Engine-Cloud-Data-Pipeline-AWS-" target="_blank" rel="noopener">Repository ↗</a> <a href="https://github.com/ManuCem/AWS-Governance-Cleanup-Tool" target="_blank" rel="noopener">Governance tool ↗</a></p>
       </div>
-      <div class="cta">
-        <a class="btn" href="https://github.com/ManuCem/End-to-End-Quantitative-Pricing-Engine-Cloud-Data-Pipeline-AWS-" target="_blank" rel="noopener">Repository ↗</a>
-      </div>
+      <div class="g-chart"><div class="g-flow"><span>EC2</span><i>→</i><span>S3</span><i>→</i><span>Glue</span><i>→</i><span>Athena</span><i>→</i><span>SageMaker</span></div></div>
     </div>
-
-    <div class="tabs" role="tablist">
-      <button class="tab" role="tab" aria-selected="true" data-tab="arch">Architecture</button>
-      <button class="tab" role="tab" aria-selected="false" data-tab="data">Data &amp; ETL</button>
-      <button class="tab" role="tab" aria-selected="false" data-tab="gov">Governance</button>
-    </div>
-
-    <div class="panel" data-panel="arch">
-      <div class="flow" style="margin-bottom:18px">
-        <span class="node">10 raw CSV feeds</span><span class="arrow">→</span>
-        <span class="node">EC2 · Python + regex</span><span class="arrow">→</span>
-        <span class="node">S3 · Parquet lake</span><span class="arrow">→</span>
-        <span class="node">Glue · ETL &amp; catalog</span><span class="arrow">→</span>
-        <span class="node">Athena / QuickSight</span><span class="arrow">+</span>
-        <span class="node">SageMaker · XGBoost</span>
-      </div>
-      <div class="aws-grid">
-        <div class="aws"><span class="layer">Orchestration</span><b>EventBridge</b><span>Triggers automated batch workflows</span></div>
-        <div class="aws"><span class="layer">Compute</span><b>EC2</b><span>Python cleaning and regex parsing of the 10 raw feeds</span></div>
-        <div class="aws"><span class="layer">Storage</span><b>S3</b><span>Central data lake in compressed Apache Parquet</span></div>
-        <div class="aws"><span class="layer">ETL</span><b>Glue</b><span>Schema evolution, transforms and the Data Catalog</span></div>
-        <div class="aws"><span class="layer">Query</span><b>Athena</b><span>Serverless SQL checks on data integrity</span></div>
-        <div class="aws"><span class="layer">BI</span><b>QuickSight</b><span>Exploratory analysis of pricing dynamics</span></div>
-        <div class="aws"><span class="layer">ML</span><b>SageMaker</b><span>Trains an XGBoost regression for multi-factor pricing</span></div>
-        <div class="aws"><span class="layer">Security</span><b>IAM</b><span>Least-privilege access policies</span></div>
-        <div class="aws"><span class="layer">Monitoring</span><b>CloudWatch</b><span>Pipeline health, metrics and logs</span></div>
-        <div class="aws"><span class="layer">Alerts</span><b>SNS</b><span>Alerts when the pipeline degrades</span></div>
-      </div>
-    </div>
-
-    <div class="panel" data-panel="data" hidden>
-      <p style="margin-top:0">The source is the <a href="https://www.kaggle.com/datasets/rudraprasadbhuyan/amazon-laptop-messy-dataset" target="_blank" rel="noopener">Amazon Laptop Messy Dataset</a> (Kaggle): 10 fragmented CSV feeds with heavy missing data, non-standard units and formatting problems.</p>
-      <div class="grid-2">
-        <div class="mini"><h4>1 · Reconcile</h4><p>Merged the 10 datasets into one consolidated schema on EC2.</p></div>
-        <div class="mini"><h4>2 · Extract</h4><p>Pulled hardware attributes out of free text with regular expressions.</p></div>
-        <div class="mini"><h4>3 · Normalize</h4><p>Fixed formatting problems to prevent data leakage and keep the model statistically valid.</p></div>
-        <div class="mini"><h4>4 · Columnar warehousing</h4><p>Glue converts CSV to Parquet and enforces strict types, such as casting text prices to numeric floats.</p></div>
-      </div>
-      <p class="callout" style="margin-top:16px">The Parquet layout lets Athena scan <b>about 90% less data</b> through partition pruning, which cuts query cost and run time. The output was checked locally with TAD (Tabular Data Viewer) before modelling.</p>
-    </div>
-
-    <div class="panel" data-panel="gov" hidden>
-      <p style="margin-top:0">Following AWS FinOps practice, the project includes a custom governance tool I wrote:</p>
-      <div class="mini">
-        <h4><a href="https://github.com/ManuCem/AWS-Governance-Cleanup-Tool" target="_blank" rel="noopener">AWS-Governance-Cleanup-Tool ↗</a></h4>
-        <p>Finds and removes idle resources (EC2 instances, S3 artifacts, SageMaker endpoints) so costs don't drift.</p>
-      </div>
-      <div class="tags"><span class="tag">FinOps</span><span class="tag">IAM</span><span class="tag">Cost control</span><span class="tag">Operational risk</span></div>
-    </div>
-  </article>
+    <p class="g-note">Macro Quant Lab is a personal research lab (MIT licence). It also holds models for the S&amp;P 500 and 30-year Treasury yields, and runs from a Telegram command through an n8n workflow that replies with an LLM interpretation.</p>
+  </div>
 </section>
 
 <!-- SKILLS -->
@@ -463,28 +393,6 @@
 </footer>
 
 <script>
-  // Tabs
-  document.querySelectorAll("[data-tabs]").forEach(card => {
-    const tabs = card.querySelectorAll(".tab");
-    const panels = card.querySelectorAll(".panel");
-    tabs.forEach(t => t.addEventListener("click", () => {
-      tabs.forEach(x => x.setAttribute("aria-selected", x === t));
-      panels.forEach(p => p.hidden = p.dataset.panel !== t.dataset.tab);
-    }));
-  });
-
-  // VIX bars
-  const vix = [
-    ["Dot-com", 25.4, 22.1], ["2008 crisis", 48.8, 53.0],
-    ["Covid 2020", 41.4, 48.0], ["Tariffs 2025", 28.4, 21.8]
-  ];
-  const max = 55;
-  document.getElementById("vixBars").innerHTML = vix.map(([n, v, r]) => `
-    <div class="bar-row"><span>${n}</span><div class="bar-pair">
-      <div class="bar" style="width:${v / max * 100}%"></div><small>VIX ${v.toFixed(1)}</small>
-      <div class="bar real" style="width:${r / max * 100}%"></div><small>Realized ${r.toFixed(1)}</small>
-    </div></div>`).join("");
-
   // Certifications
   // Issuer badges drawn as inline SVG, so the page needs no external images
   const logos = {

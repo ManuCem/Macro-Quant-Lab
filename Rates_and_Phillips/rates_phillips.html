@@ -167,7 +167,7 @@ function phillips(ep, narrow) {                                 // unemployment 
 function recovery(narrow) {                                     // the two crises overlaid, counted from the unemployment peak
   const o = base(narrow);
   o.xAxis = ax({type: "value", name: "Months since unemployment peaked", nameLocation: "middle", nameGap: 28});
-  o.yAxis = ax({type: "value", name: narrow ? "" : "points above pre-crisis low", min: 0});
+  o.yAxis = ax({type: "value", min: 0});                      // no axis title: the text above the chart says "points above the pre-crisis low"
   o.series = DATA.episodes.map(ep => ({name: ep.name, type: "line", showSymbol: false, data: ep.recovery.map((v, i) => [i, v]),
     lineStyle: {color: ep.color, width: 3}, itemStyle: {color: ep.color},
     markLine: {silent: true, symbol: "none", lineStyle: {color: ep.color, type: "dotted"}, label: {show: false}, data: [{yAxis: 0.5}]}}));
