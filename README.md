@@ -76,6 +76,11 @@ Each folder is a self-contained experiment:
   the US Federal Reserve (federal funds target rate), plus the interest rates and
   Phillips curve study above (2008 and Covid).
   [▶ Open live dashboard](https://manucem.github.io/Macro-Quant-Lab/Rates_and_Phillips/index.html)
+- **Deficit_Surplus/** — world map of trade surpluses and deficits in goods (UN
+  Comtrade), with a Surplus/Deficit filter, the total in the corner, and arrows from
+  any country to its top 3 export or import partners (top 10 listed below the map). Run
+  `python Deficit_Surplus/trade_balance.py` (no API key; first run ~10 min).
+  [▶ Open live map](https://manucem.github.io/Macro-Quant-Lab/Deficit_Surplus/trade_balance.html)
 - **bond-30y/** — pulls 30-year Treasury yield data, engineers technical
   features, and predicts next-day direction (up/down), validated with
   time-series cross-validation.

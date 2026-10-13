@@ -240,3 +240,6 @@ secrets.json
 
 # Unrelated project kept locally, never tracked
 Cafe/
+
+# Deficit_Surplus: raw UN Comtrade answers, re-downloaded by the script when missing
+Deficit_Surplus/cache/
