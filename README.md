@@ -78,7 +78,7 @@ Each folder is a self-contained experiment:
   [▶ Open live dashboard](https://manucem.github.io/Macro-Quant-Lab/Rates_and_Phillips/index.html)
 - **Deficit_Surplus/** — world map of trade surpluses and deficits in goods (UN
   Comtrade), with a Surplus/Deficit filter, the total in the corner, and arrows from
-  any country to its top 3 export or import partners (top 10 listed below the map). Run
+  any country to its top 3 export or import partners (top 10 in a corner table). Click a country twice to switch between its exports and imports. Run
   `python Deficit_Surplus/trade_balance.py` (no API key; first run ~10 min).
   [▶ Open live map](https://manucem.github.io/Macro-Quant-Lab/Deficit_Surplus/trade_balance.html)
 - **bond-30y/** — pulls 30-year Treasury yield data, engineers technical
