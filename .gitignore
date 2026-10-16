@@ -16,7 +16,8 @@ eggs/
 .eggs/
 lib/
 # exception to 'lib/': the ECharts library the rate pages need on GitHub Pages
-!Interest_Rates/lib/
+!Rates_and_Phillips/lib/
+!Rates_and_Phillips/lib/*.js
 lib64/
 parts/
 sdist/
