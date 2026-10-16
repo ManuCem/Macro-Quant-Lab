@@ -108,7 +108,7 @@ Each folder is a self-contained experiment:
 - **VIX/** — the VIX vs realized volatility study above.
   [▶ Open live dashboard](https://manucem.github.io/Macro-Quant-Lab/VIX/output/shocks.html)
 - **Rates_and_Phillips/** — policy rates of the European Central Bank (key rates) and
-  the US Federal Reserve (ON RRP, IORB and discount rate), plus the interest rates and
+  the US Federal Reserve (EFFR and SOFR), plus the interest rates and
   Phillips curve study above (2008 and Covid).
   [▶ Open live dashboard](https://manucem.github.io/Macro-Quant-Lab/Rates_and_Phillips/index.html)
 - **Deficit_Surplus/** — world map of trade surpluses and deficits in goods (UN
