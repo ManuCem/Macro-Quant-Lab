@@ -16,7 +16,8 @@ eggs/
 .eggs/
 lib/
 # exception to 'lib/': the ECharts library the rate pages need on GitHub Pages
-!Interest_Rates/lib/
+!Rates_and_Phillips/lib/
+!Rates_and_Phillips/lib/*.js
 lib64/
 parts/
 sdist/
@@ -243,3 +244,17 @@ Cafe/
 
 # Deficit_Surplus: raw UN Comtrade answers, re-downloaded by the script when missing
 Deficit_Surplus/cache/
+
+# Personal CV PDF: not for the public repo
+cv/CV_Manuel_Cembranos.pdf
+
+# CV PDFs (personal documents, keep local)
+cv/*.pdf
+
+# Vendored front-end libraries for the dashboards (must be committed)
+!Deficit_Surplus/lib/
+!Deficit_Surplus/lib/*.js
+
+# Private CV working folder (never commit)
+cv_claude/
+**/cv_claude/
