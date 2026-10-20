@@ -64,10 +64,6 @@ CDS_SNAPSHOT = [
     {"country": "France", "cds_bp": 79.5, "date": "2026-10-15", "source": "Investing.com",
      "url": "https://www.investing.com/rates-bonds/france-cds-5-years-usd-historical-data"},
 ]
-FRANCE_CDS_PEAK = {"cds_bp": 81.0, "date": "2026-10-02",       # France's 5y CDS high this month (highest since 2013)
-                   "source": "S&P Global Market Intelligence via Fortune",
-                   "url": "https://fortune.com/2026/10/02/france-debt-crisis-bond-investors-odds-sovereign-default-cds-yield-spread-deficit-presidential-race/"}
-
 # Latest daily 10y spreads vs Germany reported in the press (closes, not monthly averages).
 LATEST_DAILY = [
     {"country": "France", "spread_bp": 154, "date": "2026-10-20", "source": "Bloomberg",
@@ -78,16 +74,12 @@ LATEST_DAILY = [
 
 # Events marked on the history chart: (month, short label, longer explanation).
 EVENTS = [
-    ("2010-05", "1", "Greece's first bailout: the euro debt crisis begins."),
-    ("2011-11", "2", "Crisis peak: Berlusconi resigns, Italy's spread hits its euro-era record."),
-    ("2012-07", "3", "ECB president Draghi: \"whatever it takes\" to save the euro. Spreads start to fall."),
-    ("2018-05", "4", "Italy: the Lega-5 Star coalition takes office and clashes with Brussels over its budget."),
-    ("2020-03", "5", "Covid shock; the ECB answers with a €750bn bond-buying programme (PEPP)."),
-    ("2022-07", "6", "Draghi's government falls in Italy; the ECB creates a new anti-spread tool (TPI)."),
-    ("2024-06", "7", "Macron calls a snap election: France's spread jumps."),
-    ("2024-12", "8", "France: the Barnier government falls in a no-confidence vote."),
-    ("2025-09", "9", "France: the Bayrou government falls; Fitch cuts France to A+."),
-    ("2026-10", "10", "Riots over the cost of living in France and Italy; France's spread back at its 2011 record."),
+    ("2011-11", "1", "Euro crisis peak."),
+    ("2012-07", "2", "Draghi: \"whatever it takes\"."),
+    ("2018-05", "3", "Italy's populist budget clash."),
+    ("2024-06", "4", "Macron calls a snap election."),
+    ("2025-09", "5", "Bayrou government falls; Fitch cuts France."),
+    ("2026-10", "6", "Riots in France and Italy."),
 ]
 
 
@@ -237,17 +229,16 @@ a.back{display:inline-flex;align-items:center;min-height:44px;text-decoration:no
 .card{background:var(--surface);border:1px solid var(--grid);border-top:4px solid var(--c);border-radius:10px;padding:4px 16px 10px}
 .card ul{padding-left:1.1rem;margin:.3rem 0}
 .card li{margin:.3rem 0}
-ol.events{padding-left:1.6rem}
-ol.events li{margin:.25rem 0}
+details{margin-top:1.5rem}summary{min-height:44px;display:flex;align-items:center;cursor:pointer;color:var(--ink-2)}
 .scroll{overflow-x:auto;border:1px solid var(--grid);border-radius:10px}
 table{border-collapse:collapse;width:100%;background:var(--surface);font-variant-numeric:tabular-nums}
 th,td{padding:8px 10px;border-bottom:1px solid var(--grid);text-align:right;white-space:nowrap}
 th:first-child,td:first-child{text-align:left;position:sticky;left:0;background:var(--surface)}
 .sources li{margin:.2rem 0}
 .sources a{display:inline-block;padding:11px 0;margin:-5px 0}
-a.hit{position:relative}a.hit::after{content:"";position:absolute;inset:-13px -8px}
+ul.sources{padding-left:1.1rem}
 footer{margin-top:2.5rem;padding-top:1rem;border-top:1px solid var(--grid);color:var(--muted);font-size:.85rem}
-@media (max-width:640px){.cols{grid-template-columns:1fr}.chart{height:480px}.chart.short{height:300px}h1{font-size:1.25rem}}
+@media (max-width:640px){th{white-space:normal}th,td{padding:8px 6px}.cols{grid-template-columns:1fr}.chart{height:480px}.chart.short{height:300px}h1{font-size:1.25rem}}
 """
 
 JS = """
@@ -286,7 +277,7 @@ function spreads(narrow) {                                      // France and It
     itemStyle: {color}});                                       // no end labels: France and Italy now end at almost the same level
   o.series = [line("France - Germany", "fr_de", css("--fr")), line("Italy - Germany", "it_de", css("--it"))];
   o.series[0].markLine = {silent: true, symbol: "none", lineStyle: {color: css("--axis"), type: "dashed"},  // numbered event lines
-    label: {formatter: p => p.name, color: css("--ink-2"), fontSize: 11}, data: DATA.events.map((e, i) => ({name: e[1], xAxis: e[0], label: {distance: narrow ? 2 + (i % 3) * 13 : 4}}))};  // 3 label heights on a phone, one row on desktop
+    label: {formatter: p => p.name, color: css("--ink-2"), fontSize: 11}, data: DATA.events.map((e, i) => ({name: e[1], xAxis: e[0], label: {distance: narrow ? 2 + (i % 2) * 13 : 4}}))};  // 2 label heights on a phone, one row on desktop
   o.series.push({name: "Oct 2026, latest daily close", type: "scatter", symbol: "diamond", symbolSize: 12,  // the news numbers
     data: DATA.latest.map(r => ({value: [r.date, r.spread_bp], itemStyle: {color: r.country === "France" ? css("--fr") : css("--it"),
           borderColor: css("--surface"), borderWidth: 2}, name: r.country})),
@@ -311,18 +302,6 @@ function gap(narrow) {                                          // Italy minus F
   return o;
 }
 
-function yields(narrow) {                                       // the three 10-year yields themselves
-  const o = base(narrow);
-  o.grid = narrow ? {left: 40, right: 16, top: 30, bottom: 150} : {left: 52, right: 28, top: 44, bottom: 54};
-  o.xAxis = ax({type: "time"});
-  o.yAxis = ax({type: "value", name: "%", nameTextStyle: {color: css("--muted")}});
-  o.dataZoom = zoom(narrow, null);
-  const line = (name, key, color) => ({name, type: "line", data: pts(key), showSymbol: false, lineStyle: {color, width: 2}, itemStyle: {color}});
-  o.series = [line("Italy", "IT", css("--it")), line("France", "FR", css("--fr")), line("Germany", "DE", css("--de"))];
-  o.tooltip.valueFormatter = v => v == null ? "-" : v.toFixed(2) + "%";
-  return o;
-}
-
 function cds(narrow) {                                          // the CDS snapshot: one bar per country
   const o = base(narrow);
   o.legend = {show: false};                                     // the axis labels name the countries
@@ -339,7 +318,7 @@ function cds(narrow) {                                          // the CDS snaps
   return o;
 }
 
-const BUILDERS = {spreads, gap, yields, cds};                   // chart div id -> function that builds its options
+const BUILDERS = {spreads, gap, cds};                   // chart div id -> function that builds its options
 function drawAll() {                                            // (re)build every chart; called on load, rotation and theme change
   const narrow = narrowMQ.matches;
   document.querySelectorAll(".chart").forEach(div => {
@@ -354,83 +333,62 @@ window.addEventListener("resize", () => Object.values(INSTANCES).forEach(c => c.
 drawAll();
 """
 
-FRANCE_PROBLEM = [                        # why markets worry about France (facts from the sources listed on the page)
-    "<b>Deficit that will not come down:</b> about 5.4% of GDP in 2026; the 2027 budget only aims for 5.0%. "
-    "The EU limit is 3%.",
-    "<b>Debt at a post-war high:</b> about 119% of GDP, and the interest bill rises every time the yield goes up.",
-    "<b>No stable majority:</b> since the 2024 snap election, governments keep falling (Barnier Dec 2024, "
-    "Bayrou Sep 2025). Prime Minister Sébastien Lecornu leads a minority government that must pass the 2027 budget.",
-    "<b>Election risk:</b> presidential election in May 2027. Leading candidates promise a lower retirement age "
-    "(Le Pen) or cancelling the ECB's French debt (Mélenchon). Moody's rates France Aa3 with a negative outlook.",
-]
-ITALY_PROBLEM = [                         # why Italy is now seen as the (relatively) steadier one
-    "<b>Even more debt:</b> roughly 135% of GDP, the second highest in the euro area after Greece. Italy has "
-    "always paid a premium for that.",
-    "<b>But a shrinking deficit and a stable government:</b> Meloni's coalition has governed since Oct 2022, "
-    "brought the deficit down towards 3% of GDP and won rating upgrades in 2025.",
-    "<b>Energy shock:</b> higher oil and diesel prices (tension around Iran) hit an energy-importing country "
-    "hard. The BTP-Bund spread jumped to 126 bp on 2 Oct 2026 and 131 bp on 5 Oct before easing to about 107 bp.",
-    "<b>The market's verdict:</b> Italy's spread fell from 519 bp in 2011 to under 100 bp, while France's rose. "
-    "Since late 2025, France has sometimes paid MORE than Italy, which was unthinkable for 25 years.",
-]
-PROTESTS = {                              # the recent unrest, country by country
+
+COUNTRY_CARDS = {                         # one card per country: its problem, then its protests (facts from SOURCES)
     "France": [
-        "<b>From 18 Sep:</b> a teachers' strike in Créteil (Paris suburbs) over staff shortages grows into "
-        "nationwide student protests over run-down schools.",
-        "<b>17 Oct:</b> students, fuel protesters and workers march against the cost of living: more than 550,000 "
-        "people according to the Interior Ministry. Looting and fires in Paris, Marseille, Lille, Lyon and other "
-        "cities; Limoges town hall burned. 1,200 arrests, 150 police officers hurt.",
-        "<b>Markets:</b> the OAT-Bund spread went back above 150 bp (154 bp on 20 Oct) and the 10-year yield "
-        "approached 5%, the highest since 2002. A first budget vote in the National Assembly is the next test.",
+        "<b>Problem:</b> deficit 5.4% of GDP (EU limit 3%), debt 119% of GDP, a minority government "
+        "(PM Lecornu) that must pass the 2027 budget, and an election in May 2027.",
+        "<b>Protests:</b> student protests since September, then 550,000+ marched against the cost of "
+        "living on 17 Oct. Looting, Limoges town hall burned, 1,200 arrests.",
+        "<b>Market:</b> spread back above 150 bp, the 2011 record; 10y yield near 5%.",
     ],
     "Italy": [
-        "<b>From 16 Oct:</b> truckers and farmers block roads in Sicily, Calabria, Basilicata, Puglia and Campania "
-        "over the price of diesel. Petrol stations run dry and supermarket shelves empty in the South.",
-        "<b>16 Oct:</b> \"No Meloni Day\" student marches in Milan, Turin, Bologna, Rome and other cities.",
-        "<b>17-18 Oct:</b> marches against wars and the cost of living turn into riots in Milan, Turin and Bologna. "
-        "Police report 28 arrests and 141 officers injured. Meloni blames \"hooligans\"; Transport Minister Salvini "
-        "meets the hauliers on 20 Oct, with a ministry meeting set for 27 Oct.",
+        "<b>Problem:</b> even more debt (~135% of GDP), but a stable government since 2022, a falling "
+        "deficit and rating upgrades in 2025. The diesel price shock hurts.",
+        "<b>Protests:</b> truckers and farmers block roads in the South over diesel (16 Oct, fuel shortages); "
+        "riots in Milan, Turin and Bologna on 17-18 Oct, 141 officers injured.",
+        "<b>Market:</b> spread jumped to 131 bp on 5 Oct, then eased to ~107 bp.",
     ],
 }
 SOURCES = [                               # (label, link) for every news fact on the page
-    ("ECB data portal: long-term interest rates for convergence purposes (IRS)", "https://data.ecb.europa.eu/data/datasets/IRS"),
-    ("Bloomberg (20 Oct 2026): French bond-risk gauge hits 150 bp after protests",
+    ("ECB data portal: 10-year yields (IRS)", "https://data.ecb.europa.eu/data/datasets/IRS"),
+    ("Bloomberg, 20 Oct 2026: French spread hits 150 bp",
      "https://www.bloomberg.com/news/articles/2026-10-20/french-bond-risk-gauge-hits-150-basis-points-after-protests"),
-    ("Fortune (17 Oct 2026): 'France, truly, is on the brink'",
+    ("Fortune, 17 Oct 2026: France 'on the brink'",
      "https://fortune.com/2026/10/17/france-debt-crisis-budget-deficit-bond-yields-spread-protests-riots/"),
-    ("Fortune (2 Oct 2026): bond investors price growing odds of a French default",
+    ("Fortune, 2 Oct 2026: French CDS at 81 bp",
      "https://fortune.com/2026/10/02/france-debt-crisis-bond-investors-odds-sovereign-default-cds-yield-spread-deficit-presidential-race/"),
-    ("Al Jazeera (17 Oct 2026): cost-of-living protests hit Belgium, Italy, Portugal and France",
+    ("Al Jazeera, 17 Oct 2026: cost-of-living protests",
      "https://www.aljazeera.com/news/2026/10/17/cost-of-living-protests-hit-belgium-italy-portugal-and-france"),
-    ("Anadolu (18 Oct 2026): 28 arrested, 141 officers injured in Italy",
+    ("Anadolu, 18 Oct 2026: Italy riots",
      "https://www.anews.com.tr/europe/2026/10/18/28-arrested-141-officers-injured-as-cost-of-living-protests-turn-violent-in-italy"),
-    ("Il Post (16 Oct 2026): hauliers' and farmers' protests spread across the South",
-     "https://www.ilpost.it/2026/10/16/proteste-autotrasportatori-sud-italia/"),
-    ("QuiFinanza (2 Oct 2026): BTP-Bund spread at 126 bp", "https://quifinanza.it/economia/finanza/spread-btp-bund-2-ottobre-2026/1017895/"),
-    ("Wikipedia: 2026 European unrest (live article)", "https://en.wikipedia.org/wiki/2026_European_unrest"),
-    ("TD Economics: France's bond warning", "https://economics.td.com/gbl-france-bond-warning"),
-]
+    ("Il Post, 16 Oct 2026: truckers' strike in the South", "https://www.ilpost.it/2026/10/16/proteste-autotrasportatori-sud-italia/"),
+    ("countryeconomy.com: Italy spread", "https://countryeconomy.com/risk-premium/italy"),
+] + [(f"{r['source']}: {r['country']} CDS", r["url"]) for r in CDS_SNAPSHOT]  # plus the three CDS quotes
 
 
 def tile(value, label, color=None):
     """One small stat box; an optional coloured dot names the country."""
     dot = f'<i class="dot" style="background:var({color})"></i>' if color else ""   # identity is in the text too, never colour alone
-    return f'<div class="tile"><b>{dot}{escape(value)}</b><span>{escape(label)}</span></div>'  # big number + small caption
+    # returns a str of HTML, e.g. '<div class="tile"><b><i class="dot" ...></i>154 bp</b><span>France over Germany (20 Oct)</span></div>'
+    return f'<div class="tile"><b>{dot}{escape(value)}</b><span>{escape(label)}</span></div>'
 
 
-def bullet_list(items):
-    """<ul> from a list of HTML snippets (the snippets are our own text, already safe)."""
-    return "<ul>" + "".join(f"<li>{item}</li>" for item in items) + "</ul>"
+def country_card(country, color):
+    """One card: the country's problem, protests and market reaction as a short list."""
+    items = "".join(f"<li>{item}</li>" for item in COUNTRY_CARDS[country])   # our own text, already safe HTML
+    # returns a str of HTML, e.g. '<div class="card" style="--c:var(--fr)"><h3>...France</h3><ul><li>...</li> x3</ul></div>'
+    return (f'<div class="card" style="--c:var({color})"><h3><i class="dot" style="background:var({color})"></i>'
+            f'{country}</h3><ul>{items}</ul></div>')
 
 
 def recent_table(data):
-    """HTML table of the last 24 months: yields and spreads."""
+    """HTML table of the last 6 months: the three spreads."""
     rows = "".join(                                            # newest month first
-        f"<tr><td>{d.strftime('%b %Y')}</td><td>{r['DE']:.2f}%</td><td>{r['FR']:.2f}%</td><td>{r['IT']:.2f}%</td>"
-        f"<td>{r['fr_de']:.0f}</td><td>{r['it_de']:.0f}</td><td>{r['it_fr']:+.0f}</td></tr>"
-        for d, r in data.tail(24).iloc[::-1].iterrows())
-    head = ("<tr><th>Month</th><th>Germany 10y</th><th>France 10y</th><th>Italy 10y</th>"
-            "<th>France - Germany (bp)</th><th>Italy - Germany (bp)</th><th>Italy - France (bp)</th></tr>")
+        f"<tr><td>{d.strftime('%b %Y')}</td><td>{r['fr_de']:.0f}</td><td>{r['it_de']:.0f}</td><td>{r['it_fr']:+.0f}</td></tr>"
+        for d, r in data.tail(6).iloc[::-1].iterrows())
+    head = "<tr><th>Month</th><th>France vs DE</th><th>Italy vs DE</th><th>Italy vs FR</th></tr>"   # short headers so it fits a phone
+    # returns a str of HTML: a header and 6 rows, e.g. <tr><td>Sep 2026</td><td>97</td><td>89</td><td>-8</td></tr>
     return f'<div class="scroll"><table>{head}{rows}</table></div>'
 
 
@@ -438,7 +396,7 @@ def build_page(data, stats, cds):
     """Assemble the standalone HTML page and write it to disk."""
     payload = {                                                # everything the page's JavaScript needs
         "dates": [d.strftime("%Y-%m-%d") for d in data.index],  # x values for every chart
-        **{key: [round(float(v), 2) for v in data[key]] for key in ["DE", "FR", "IT", "fr_de", "it_de", "it_fr"]},
+        **{key: [round(float(v), 2) for v in data[key]] for key in ["fr_de", "it_de", "it_fr"]},  # the three spreads
         "events": [[f"{month}-01", label] for month, label, _ in EVENTS],  # where to draw the numbered event lines
         "latest": LATEST_DAILY,                                # the October press figures (diamonds on the chart)
         "cds": cds.drop(columns="url").to_dict(orient="records"),  # the CDS bars
@@ -446,16 +404,14 @@ def build_page(data, stats, cds):
     s = stats                                                  # short name
     fr_cds = cds.set_index("country").loc["France"]            # France's row of the CDS table
     it_cds = cds.set_index("country").loc["Italy"]             # Italy's row
-    tiles = "".join([                                          # the headline numbers
-        tile(f"{LATEST_DAILY[0]['spread_bp']} bp", f"France over Germany, 10y, {LATEST_DAILY[0]['date']} (record month: {s['fr_peak']:.0f} bp, {s['fr_peak_date']})", "--fr"),
-        tile(f"{LATEST_DAILY[1]['spread_bp']} bp", f"Italy over Germany, 10y, {LATEST_DAILY[1]['date']} (record month: {s['it_peak']:.0f} bp, {s['it_peak_date']})", "--it"),
-        tile(f"{fr_cds['cds_bp']:.1f} bp", f"France 5y CDS ({fr_cds['date']}) = ~{fr_cds['default_prob']:.1f}% default risk a year", "--fr"),
-        tile(f"{it_cds['cds_bp']:.1f} bp", f"Italy 5y CDS ({it_cds['date']}) = ~{it_cds['default_prob']:.1f}% default risk a year", "--it"),
+    tiles = "".join([                                          # the four headline numbers
+        tile(f"{LATEST_DAILY[0]['spread_bp']} bp", "France over Germany (20 Oct)", "--fr"),
+        tile(f"{LATEST_DAILY[1]['spread_bp']} bp", "Italy over Germany (16 Oct)", "--it"),
+        tile(f"{fr_cds['cds_bp']:.1f} bp", f"France 5y CDS: ~{fr_cds['default_prob']:.1f}% default risk/yr", "--fr"),
+        tile(f"{it_cds['cds_bp']:.1f} bp", f"Italy 5y CDS: ~{it_cds['default_prob']:.1f}% default risk/yr", "--it"),
     ])
-    events = "".join(f"<li value=\"{label}\"><b>{pd.Timestamp(month).strftime('%b %Y')}</b> {escape(text)}</li>" for month, label, text in EVENTS)
-    sources = "".join(f'<li><a href="{escape(url)}">{escape(label)}</a></li>' for label, url in SOURCES)
-    cds_sources = "".join(f'<li>{escape(r["country"])}: {r["cds_bp"]} bp on {r["date"]}, <a href="{escape(r["url"])}">{escape(r["source"])}</a></li>'
-                          for r in CDS_SNAPSHOT)
+    events = " · ".join(f"<b>{label}</b> {escape(text)}" for _, label, text in EVENTS)   # one compact line of event keys
+    sources = "".join(f'<li><a href="{escape(url)}">{escape(label)}</a></li>' for label, url in SOURCES)  # links, folded away
     html = f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -464,74 +420,37 @@ def build_page(data, stats, cds):
 <script src="{ECHARTS_URL}"></script>
 </head><body><main>
 <a class="back" href="../index.html">&larr; Macro Quant Lab</a>
-<h1>France vs Italy: what the bond market charges for the risk</h1>
-<p class="sub">10-year bond spreads over Germany (ECB data, monthly, {EURO_START[:4]} to {s['last_month']}) and 5-year
-credit default swaps, read against the October 2026 protests in both countries.</p>
-
-<div class="read"><b>The short version:</b> for 25 years Italy was the euro area's risky big borrower and France sat
-close to Germany. That has flipped. France now pays {s['fr_de']:.0f} bp over Germany on the monthly average
-({s['last_month']}) and about {LATEST_DAILY[0]['spread_bp']} bp in daily trading, back at its 2011 euro-crisis record.
-Insuring French debt (CDS) costs more than insuring Italian debt. In {s['flip_last12']} of the last 12 months France
-paid a higher yield than Italy.</div>
-
+<h1>France vs Italy: the price of risk</h1>
+<div class="read"><b>The point:</b> Italy used to be the risky one. Now France pays as much or more. Its premium over
+Germany is back at the 2011 euro-crisis record (~{LATEST_DAILY[0]['spread_bp']} bp), and insuring French debt costs
+more than insuring Italian debt.</div>
 <div class="tiles">{tiles}</div>
 
-<h2>1. The premium over Germany since the euro began</h2>
-<p>How many basis points more than Germany each country pays on 10-year debt (100 bp = 1 percentage point).
-The numbered lines are the events listed under the chart; the diamonds are the latest daily closes from the press.</p>
-<div class="chart" id="spreads" role="img" aria-label="Line chart of France and Italy 10-year spreads over Germany since 1999"></div>
-<p class="note">Monthly averages, so the daily peaks (e.g. 2011) were higher still. Tap the chart for exact values; use the slider to zoom.</p>
-<ol class="events">{events}</ol>
+<h2>Premium over Germany, 10-year bonds</h2>
+<div class="chart" id="spreads" role="img" aria-label="France and Italy 10-year spreads over Germany since 1999"></div>
+<p class="note">{events} Monthly ECB averages; diamonds = latest daily close. 100 bp = 1 percentage point.</p>
 
-<h2>2. Who pays more: Italy or France?</h2>
-<p>Italy's 10-year yield minus France's. <span style="color:var(--it)">&#9632;</span> Green bars up: Italy pays more (the old normal).
-<span style="color:var(--fr)">&#9632;</span> Blue bars down: <b>France pays more than Italy</b> ({', '.join(s['flip_months'])}).</p>
-<div class="chart short" id="gap" role="img" aria-label="Bar chart of Italy's yield minus France's yield"></div>
-<p class="note">Starts zoomed on 2018 onward; drag the slider left to see back to 1999 (Italy paid up to {data['it_fr'].max():.0f} bp more).</p>
+<h2>Who pays more?</h2>
+<p>Italy's yield minus France's. <b>Blue bars below zero = France pays more</b>: {s['flip_last12']} of the last 12 months.</p>
+<div class="chart short" id="gap" role="img" aria-label="Italy's yield minus France's yield"></div>
 
-<h2>3. Credit default swaps: the price of insurance</h2>
-<p>A <b>CDS</b> is an insurance contract on a government's bonds. The buyer pays a yearly premium and is paid back
-if the country defaults. The premium is a direct price of default risk, without the noise that moves bond yields
-(ECB buying, safe-haven demand for Bunds). Rule of thumb: <b>yearly default probability ≈ premium / (1 − recovery)</b>,
-with 40% recovery. So France's {fr_cds['cds_bp']} bp → {fr_cds['cds_bp']/10000:.4f} / 0.60 ≈ <b>{fr_cds['default_prob']:.2f}% a year</b>.</p>
-<div class="chart short" id="cds" role="img" aria-label="Bar chart of 5-year CDS premiums for Germany, Italy and France"></div>
-<p class="note">France's premium is {fr_cds['vs_germany']}x Germany's and above Italy's. It peaked at {FRANCE_CDS_PEAK['cds_bp']:.0f} bp on
-{FRANCE_CDS_PEAK['date']}, the highest since 2013 (<a class="hit" href="{FRANCE_CDS_PEAK['url']}">source</a>), but still about a third of its
-~250 bp peak in late 2011. A price for insurance is not a forecast that default is likely. There is no free CDS data feed,
-so these are the latest levels reported in the press, each from a different day:</p>
-<ul class="note sources">{cds_sources}</ul>
+<h2>CDS: the price of default insurance</h2>
+<p>Default risk per year ≈ CDS ÷ (1 − 40% recovery). France: {fr_cds['cds_bp']} bp → ~{fr_cds['default_prob']:.2f}%.</p>
+<div class="chart short" id="cds" role="img" aria-label="5-year CDS premiums for Germany, Italy and France"></div>
+<p class="note">Latest press quotes from different days (there is no free CDS feed). Germany's is from July.</p>
 
-<h2>4. Why France: and why Italy is no longer the worst</h2>
-<div class="cols">
-<div class="card" style="--c:var(--fr)"><h3><i class="dot" style="background:var(--fr)"></i>France's problem</h3>{bullet_list(FRANCE_PROBLEM)}</div>
-<div class="card" style="--c:var(--it)"><h3><i class="dot" style="background:var(--it)"></i>Italy's problem</h3>{bullet_list(ITALY_PROBLEM)}</div>
-</div>
+<h2>Why, and the October protests</h2>
+<div class="cols">{country_card("France", "--fr")}{country_card("Italy", "--it")}</div>
 
-<h2>5. The October 2026 protests</h2>
-<p>Both countries were hit by cost-of-living unrest on the same weekend (17-18 October). For bond investors the
-question is not the protests themselves but whether they make it harder to cut the deficit. That is why the
-French spread reacted more: France has the bigger deficit and no majority to pass its budget.</p>
-<div class="cols">
-<div class="card" style="--c:var(--fr)"><h3><i class="dot" style="background:var(--fr)"></i>France</h3>{bullet_list(PROTESTS['France'])}</div>
-<div class="card" style="--c:var(--it)"><h3><i class="dot" style="background:var(--it)"></i>Italy</h3>{bullet_list(PROTESTS['Italy'])}</div>
-</div>
-
-<h2>6. The yields themselves</h2>
-<p>The spread is the gap between these lines. All three rose in 2022 when the ECB raised rates. What matters for
-risk is how far France and Italy sit above Germany.</p>
-<div class="chart" id="yields" role="img" aria-label="Line chart of German, French and Italian 10-year yields since 1999"></div>
-
-<h2>7. The numbers (last 24 months)</h2>
-<p class="note">Swipe the table sideways on a phone. The full monthly series is in <code>csv/sovereign_spreads.csv</code>.</p>
+<h2>Last 6 months (bp)</h2>
 {recent_table(data)}
 
-<h2>Sources</h2>
-<ul class="note sources">{sources}</ul>
+<details><summary>Sources</summary><ul class="note sources">{sources}</ul></details>
 <footer>Built by <code>Yield_Curve/sovereign_spreads.py</code>. A learning project, not investment advice.</footer>
 <script>{JS.replace('__DATA__', json.dumps(payload))}</script>
 </main></body></html>"""
     OUTPUT_PATH.write_text(html, encoding="utf-8")             # write the page
-    # returns nothing; writes Yield_Curve/sovereign_spreads.html (~60 KB; ECharts is loaded from the jsDelivr CDN)
+    # returns nothing; writes Yield_Curve/sovereign_spreads.html (~30 KB; ECharts is loaded from the jsDelivr CDN)
     return None
 
 
