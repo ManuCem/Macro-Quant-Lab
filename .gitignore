@@ -254,3 +254,7 @@ cv/*.pdf
 # Vendored front-end libraries for the dashboards (must be committed)
 !Deficit_Surplus/lib/
 !Deficit_Surplus/lib/*.js
+
+# Private CV working folder (never commit)
+cv_claude/
+**/cv_claude/
