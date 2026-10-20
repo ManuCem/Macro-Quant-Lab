@@ -66,6 +66,41 @@ pip install pandas statsmodels
 python Rates_and_Phillips/rates_phillips.py   # downloads from FRED (no API key) and writes rates_phillips.html
 ```
 
+## Featured: who sells more to the world than it buys?
+
+**[▶ Open live map](https://manucem.github.io/Macro-Quant-Lab/Deficit_Surplus/trade_balance.html)**
+
+[![World map of trade surpluses and deficits: China's top 3 buyers](Deficit_Surplus/trade_balance_preview.png)](https://manucem.github.io/Macro-Quant-Lab/Deficit_Surplus/trade_balance.html)
+
+A country's trade balance is exports minus imports: a surplus means it sells more
+than it buys, a deficit the opposite. Using 2024 goods trade from UN Comtrade (no API
+key) for 222 countries, the map colours every country by its balance. Picking a
+country switches the colours off and highlights only its top 3 buyers (exports) or
+sellers (imports), with numbered arrows; the full top 10 is in a table. The 75
+countries that did not report (Russia, Vietnam, UAE...) are estimated from what their
+partners reported (mirror statistics).
+
+**Takeaway:** the US deficit alone (−$1.29 tn) is bigger than China's surplus
+(+$991 bn). And the world does not add up to zero (−$194 bn), because imports include
+freight and insurance, shipments cross the year end, and hubs re-export.
+
+| Biggest surpluses | Balance | Biggest deficits | Balance |
+|---|---|---|---|
+| China | +$991 bn | United States | −$1,293 bn |
+| Germany | +$254 bn | United Kingdom | −$293 bn |
+| Russia* | +$197 bn | India | −$263 bn |
+| Vietnam* | +$132 bn | France | −$116 bn |
+| Ireland | +$98 bn | Turkey | −$82 bn |
+
+\* estimated from partners' data (the country did not report its own 2024 figures).
+
+Run it yourself:
+
+```bash
+pip install pandas requests
+python Deficit_Surplus/trade_balance.py   # downloads from UN Comtrade (first run ~10 min) and writes trade_balance.html
+```
+
 ## What's here
 
 Each folder is a self-contained experiment:
@@ -73,12 +108,13 @@ Each folder is a self-contained experiment:
 - **VIX/** — the VIX vs realized volatility study above.
   [▶ Open live dashboard](https://manucem.github.io/Macro-Quant-Lab/VIX/output/shocks.html)
 - **Rates_and_Phillips/** — policy rates of the European Central Bank (key rates) and
-  the US Federal Reserve (federal funds target rate), plus the interest rates and
+  the US Federal Reserve (EFFR and SOFR), plus the interest rates and
   Phillips curve study above (2008 and Covid).
   [▶ Open live dashboard](https://manucem.github.io/Macro-Quant-Lab/Rates_and_Phillips/index.html)
 - **Deficit_Surplus/** — world map of trade surpluses and deficits in goods (UN
-  Comtrade), with a Surplus/Deficit filter, the total in the corner, and arrows from
-  any country to its top 3 export or import partners (top 10 in a corner table). Click a country twice to switch between its exports and imports. Run
+  Comtrade), the trade map above. Surplus/Deficit filter, the total in the corner;
+  pick a country to highlight only its top 3 buyers or sellers with numbered arrows
+  (top 10 in a corner table). Click a country again to switch between its exports and imports, and a third time to go back to the world map. Run
   `python Deficit_Surplus/trade_balance.py` (no API key; first run ~10 min).
   [▶ Open live map](https://manucem.github.io/Macro-Quant-Lab/Deficit_Surplus/trade_balance.html)
 - **bond-30y/** — pulls 30-year Treasury yield data, engineers technical

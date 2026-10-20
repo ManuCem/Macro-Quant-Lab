@@ -16,6 +16,10 @@
     --neg-0: #fbd0cc; --neg-1: #f4a19b; --neg-2: #e5605c; --neg-3: #bf3534; --neg-4: #87201f;
     --pos-0: #cde2fb; --pos-1: #9ec5f4; --pos-2: #5598e7; --pos-3: #256abf; --pos-4: #104281;
     --arrow: #0b0b0b;
+    /* a country is picked: red/blue switch off and only its top 3 partners are coloured (step 2 = #1, 1 = #2, 0 = #3) */
+    --sel-fill: #52514e;                       /* the picked country itself */
+    --exp-0: #9ad8b6; --exp-1: #4cb584; --exp-2: #1f7f55;   /* green: countries that BUY its goods (its exports) */
+    --imp-0: #c9b3f0; --imp-1: #9a74de; --imp-2: #6236bd;   /* purple: countries that SELL to it (its imports) */
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
@@ -25,6 +29,9 @@
       --neg-0: #4a1f1e; --neg-1: #7d2b2a; --neg-2: #c63b3a; --neg-3: #e5605c; --neg-4: #f4a19b;
       --pos-0: #173459; --pos-1: #1c4f8f; --pos-2: #2a78d6; --pos-3: #5598e7; --pos-4: #9ec5f4;
       --arrow: #f0efec;
+      --sel-fill: #c3c2b7;
+      --exp-0: #2a6b4d; --exp-1: #3fa874; --exp-2: #7fe0ae;
+      --imp-0: #4d3880; --imp-1: #7d5ad0; --imp-2: #b79bf0;
     }
   }
   :root[data-theme="dark"] {
@@ -33,6 +40,9 @@
     --neg-0: #4a1f1e; --neg-1: #7d2b2a; --neg-2: #c63b3a; --neg-3: #e5605c; --neg-4: #f4a19b;
     --pos-0: #173459; --pos-1: #1c4f8f; --pos-2: #2a78d6; --pos-3: #5598e7; --pos-4: #9ec5f4;
     --arrow: #f0efec;
+    --sel-fill: #c3c2b7;
+    --exp-0: #2a6b4d; --exp-1: #3fa874; --exp-2: #7fe0ae;
+    --imp-0: #4d3880; --imp-1: #7d5ad0; --imp-2: #b79bf0;
   }
 
   * { box-sizing: border-box; }
@@ -108,7 +118,8 @@
   .tbl td.name, .tbl th.name { text-align: left; white-space: normal; width: 100%; }
   .tbl td.rk { color: var(--ink-3); text-align: center; width: 28px; padding: 0 0 0 8px; }
   .tbl tr.on td.rk { color: var(--ink); font-weight: 700; }
-  .tbl tr.on td.rk::before { content: "\2192 "; }            /* an arrow marks the 3 partners drawn on the map */
+  .tbl td.rk .num { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%;   /* the same 1-2-3 */
+                    border: 2px solid var(--arrow); background: var(--surface); font-size: 12px; }                  /* badge as on the map */
   .tbl small { color: var(--ink-3); }
   .rowbtn { all: unset; cursor: pointer; display: block; padding: 10px 0; }
   .rowbtn:hover { text-decoration: underline; }
@@ -125,6 +136,13 @@
   .ticks { position: relative; height: 16px; font-size: 11px; color: var(--ink-3); }
   .ticks span { position: absolute; top: 1px; transform: translateX(-50%); font-variant-numeric: tabular-nums; }
   .ends { display: flex; justify-content: space-between; font-weight: 600; }
+  /* the legend while a country is picked: the picked country + 3 partner steps */
+  .lkey { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; padding: 4px 0 6px; }
+  .lkey .item { display: inline-flex; align-items: center; gap: 6px; }
+  .lkey .steps { display: inline-flex; gap: 2px; }
+  .lkey .steps span { width: 20px; height: 10px; }
+  .lkey .steps span:first-child { border-radius: 3px 0 0 3px; }
+  .lkey .steps span:last-child { border-radius: 0 3px 3px 0; }
   .zoom { position: absolute; z-index: 2; right: max(12px, env(safe-area-inset-right)); bottom: max(12px, env(safe-area-inset-bottom));
           display: flex; gap: 6px; }
   .zoom button { width: 44px; height: 44px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface);
@@ -133,7 +151,6 @@
 
   /* map drawing */
   .country { stroke: var(--surface); stroke-width: 0.6px; vector-effect: non-scaling-stroke; cursor: pointer; transition: fill .25s, opacity .25s; }
-  .country.fade { opacity: .28; }                            /* a country is picked: everything not involved steps back */
   .country.partner { stroke: var(--ink); stroke-width: 1.2px; opacity: 1; }
   .country.sel { stroke: var(--ink); stroke-width: 2px; opacity: 1; }
   .dot { fill: var(--ink-3); opacity: .75; pointer-events: none; }
@@ -144,20 +161,24 @@
   .lbl.faint { opacity: .35; }
   .lbl.cap { font-size: 9px; fill: var(--ink-3); }
   .lbl.key { font-size: 12.5px; font-weight: 700; stroke-width: 3.5px; stroke-opacity: 1; }
-  /* arrows: drawn ABOVE every border and name: halo + thick line + big head + ring on the target + moving dashes */
+  /* arrows: drawn ABOVE every border and name: halo + thick line + head in the MIDDLE (shows the direction without
+     piling up on one country) + moving dashes; a ring on the picked country and a numbered badge 1-2-3 on each partner */
   .arrows { pointer-events: none; }
   .arc-halo { fill: none; stroke: var(--surface); stroke-linecap: round; }
   .arc { fill: none; stroke: var(--arrow); stroke-linecap: round; }
   .flowdash { fill: none; stroke: var(--surface); stroke-linecap: round; stroke-dasharray: 1 11; animation: flow 1s linear infinite; }
   .head { fill: var(--arrow); stroke: var(--surface); stroke-width: 1.5px; stroke-linejoin: round; }
-  .ring { fill: var(--surface); stroke: var(--arrow); stroke-width: 2.5px; }
-  @keyframes flow { from { stroke-dashoffset: 12; } to { stroke-dashoffset: 0; } }   /* dashes travel towards the arrow head */
+  .home { fill: var(--surface); stroke: var(--arrow); stroke-width: 2.5px; }      /* where every line starts: the picked country */
+  .badge circle { fill: var(--arrow); stroke: var(--surface); stroke-width: 2px; }  /* where a line ends: the partner, with its rank */
+  .badge text { fill: var(--surface); font: 700 12px/1 system-ui, sans-serif; }
+  .leader { stroke: var(--arrow); stroke-width: 1.5px; stroke-dasharray: 2 3; }      /* a badge pushed off a crowded spot -> its capital */
+  @keyframes flow { from { stroke-dashoffset: 12; } to { stroke-dashoffset: 0; } }   /* dashes travel from seller to buyer */
   .arc.grow, .arc-halo.grow { stroke-dasharray: 1; animation: grow .6s ease-out both; }
-  .head.grow, .ring.grow, .flowdash.grow { animation: fadein .25s ease-out .5s both; }
+  .head.grow, .badge.grow, .flowdash.grow { animation: fadein .25s ease-out .5s both; }
   .flowdash.grow { animation: fadein .25s ease-out .5s both, flow 1s linear .5s infinite; }
   @keyframes grow { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
   @keyframes fadein { from { opacity: 0; } }
-  @media (prefers-reduced-motion: reduce) { .arc.grow, .arc-halo.grow, .head.grow, .ring.grow, .flowdash, .flowdash.grow { animation: none; } }
+  @media (prefers-reduced-motion: reduce) { .arc.grow, .arc-halo.grow, .head.grow, .badge.grow, .flowdash, .flowdash.grow { animation: none; } }
 
   .tip { position: absolute; z-index: 4; pointer-events: none; background: var(--surface); border: 1px solid var(--border);
          border-radius: 8px; padding: 8px 10px; font-size: 13px; line-height: 1.4; box-shadow: 0 4px 14px rgba(0,0,0,.12);
@@ -261,8 +282,9 @@
   <ul class="facts">
     <li><b>Balance = exports &minus; imports</b>Goods only, 2024, in US dollars.</li>
     <li><b>Blue = surplus, red = deficit</b>Sells more than it buys, or the opposite. Darker = bigger.</li>
-    <li><b>Click a country twice</b>1st click: its bigger side. 2nd click: the other side.</li>
-    <li><b>Arrows: seller &rarr; buyer</b>Top 3 partners on the map, top 10 in the table. Thicker = more.</li>
+    <li><b>Click a country three times</b>1st: its bigger side. 2nd: the other side. 3rd: back to the world map.</li>
+    <li><b>Pick a country: red and blue switch off</b>Green = its top 3 buyers, purple = its top 3 sellers. Darker = bigger.</li>
+    <li><b>Arrows: seller &rarr; buyer</b>Numbered 1-2-3 where they end; the arrowhead in the middle shows the direction. Top 10 in the table.</li>
     <li><b>Services not counted</b>Tourism, finance and software are not in these numbers.</li>
     <li><b>75 countries are estimated</b>They did not report; their partners' numbers are used instead.</li>
     <li><b>The world does not add to zero</b>Freight costs, timing and re-exports through hubs.</li>
@@ -273,8 +295,8 @@
   <footer>Made in the <a href="../index.html">Macro Quant Lab</a>. Data: UN Comtrade, 2024.</footer>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
+<script src="lib/d3.min.js" integrity="sha384-CjloA8y00+1SDAUkjs099PVfnY2KmDC2BZnws9kh8D/lX1s46w6EPhpXdqMfjK6i"></script>
+<script src="lib/topojson-client.min.js" integrity="sha384-Ukv1p/xTma6P4/2bY5KzWBw+ydSpXmhCMtyciIQVDJ1RmOxtCYNMF1uXT9T63H67"></script>
 <script>
 // =====================================================================
 // 1. Data (written into the page by trade_balance.py)
@@ -318,15 +340,31 @@ function step(bn) {                       // which of the 5 colour steps a balan
   return i;
 }
 function shown(c) { return !!c && (state.side === "surplus" ? c.b > 0 : c.b < 0); }   // highlighted by the current side?
+function esc(s) { return String(s).replace(/[&<>"]/g, ch => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[ch])); }
+function partnersOf(iso) { const c = C[iso]; return c ? (state.flow === "x" ? c.tx : c.tm) : []; }   // the top 10
+function arrowPartners(iso) { return partnersOf(iso).slice(0, ARROWS); }                             // the top 3, drawn as arrows
+
+// A country is picked -> only its top 3 partners (the ones with arrows) get a colour, by rank:
+// #1 = step 2 (darkest), #2 = step 1, #3 = step 0. Recomputed in paint(); empty when nothing is picked.
+let partnerStep = {};                     // e.g. {FRA: 2, DEU: 1, PRT: 0}
+function partnerSteps(iso) {
+  const out = {};
+  arrowPartners(iso).forEach(([p], i) => { out[p] = 2 - i; });   // the list is sorted biggest first
+  return out;
+}
+function flowHue() { return state.flow === "x" ? "exp" : "imp"; }   // green for buyers, purple for sellers
 function fillFor(iso) {                   // the colour of a country on the map
-  const c = C[iso];
+  if (state.selected) {                   // a country is picked: no red/blue, only the picked country and its partners
+    if (iso === state.selected) return "var(--sel-fill)";
+    if (iso in partnerStep) return `var(--${flowHue()}-${partnerStep[iso]})`;
+    return "var(--land-off)";
+  }
+  const c = C[iso];                       // nothing picked: red/blue by surplus or deficit
   if (!shown(c)) return "var(--land-off)";
   return `var(--${c.b >= 0 ? "pos" : "neg"}-${step(c.b)})`;
 }
 function swatch(bn) { return `<span class="sw" style="background:var(--${bn >= 0 ? "pos" : "neg"}-${step(bn)})"></span>`; }
-function esc(s) { return String(s).replace(/[&<>"]/g, ch => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[ch])); }
-function partnersOf(iso) { const c = C[iso]; return c ? (state.flow === "x" ? c.tx : c.tm) : []; }   // the top 10
-function arrowPartners(iso) { return partnersOf(iso).slice(0, ARROWS); }                             // the top 3, drawn as arrows
+function partnerSwatch(iso) { return iso in partnerStep ? `<span class="sw" style="background:var(--${flowHue()}-${partnerStep[iso]})"></span>` : ""; }
 
 // =====================================================================
 // 3. Geometry: country shapes, and a label anchor in each country's biggest piece
@@ -365,6 +403,7 @@ const gOverlay = svg.append("g");               // dots, names, arrows: redrawn 
 const gDots = gOverlay.append("g");
 const gLabels = gOverlay.append("g");
 const gArrows = gOverlay.append("g").attr("class", "arrows");
+const gBadges = gOverlay.append("g").attr("class", "arrows");   // the 1-2-3 badges sit above every line, so no line hides a number
 const gHits = gOverlay.append("g");             // invisible bigger tap targets for tiny countries
 let W = 0, H = 0, projection, path, box, home = d3.zoomIdentity, lastInsets = "";
 
@@ -432,12 +471,12 @@ gBack.on("click", () => select(null));
 // =====================================================================
 function paint() {
   const sel = state.selected;
-  const partners = new Set(arrowPartners(sel).map(p => p[0]));
+  partnerStep = sel ? partnerSteps(sel) : {};   // the colour step of each of the top 10 partners (fillFor reads it)
+  const partners = new Set(arrowPartners(sel).map(p => p[0]));   // the top 3 (with arrows) also get a dark outline
   gCountries.selectAll("path")
     .style("fill", f => f.iso ? fillFor(f.iso) : "var(--land-off)")
     .classed("partner", f => partners.has(f.iso))
-    .classed("sel", f => !!f.iso && f.iso === sel)
-    .classed("fade", f => !!sel && f.iso !== sel && !partners.has(f.iso));
+    .classed("sel", f => !!f.iso && f.iso === sel);
   gCountries.selectAll(".partner").raise();     // outlines on top of neighbours
   gCountries.selectAll(".sel").raise();
   document.querySelectorAll("[data-side]").forEach(b => b.setAttribute("aria-pressed", b.dataset.side === state.side));
@@ -456,18 +495,21 @@ function scheduleOverlay() {                    // redraw at most once per anima
 }
 function toScreen(ll) { const p = projection(ll); return p ? state.t.apply(p) : null; }
 
-function arrowGeometry(a, b, width, rank, ringR) {   // a curved arrow from screen point a to b, bending "north"
+function arrowGeometry(a, b, width, rank) {   // a curved line from seller a to buyer b (screen points), bending "north",
+                                               // with the arrow head in the MIDDLE of the curve
   const dx = b[0] - a[0], dy = b[1] - a[1], d = Math.hypot(dx, dy);
-  const ux = dx / d, uy = dy / d;
+  const ux = dx / d, uy = dy / d;                        // unit vector seller -> buyer
   const [px, py] = ux >= 0 ? [uy, -ux] : [-uy, ux];      // the perpendicular that points up the screen
-  const bend = Math.min(d * (0.12 + 0.08 * rank), 70 + 40 * rank);  // each rank its own curve, so arrows to one region do not overlap
+  const bend = Math.min(d * (0.12 + 0.08 * rank), 70 + 40 * rank);  // each rank its own curve, so lines to one region do not overlap
   const c = [(a[0] + b[0]) / 2 + px * bend, (a[1] + b[1]) / 2 + py * bend];   // control point of the curve
-  let tx = b[0] - c[0], ty = b[1] - c[1]; const tl = Math.hypot(tx, ty) || 1; tx /= tl; ty /= tl;  // direction at the tip
-  const tip = [b[0] - tx * (ringR + 1.5), b[1] - ty * (ringR + 1.5)];   // the head touches the ring around the target
-  const hl = 9 + width * 1.7, hw = 5 + width * 1.1;      // arrow head length and half width
-  const end = [tip[0] - tx * hl * 0.75, tip[1] - ty * hl * 0.75];
-  const head = [tip, [tip[0] - tx * hl - ty * hw, tip[1] - ty * hl + tx * hw], [tip[0] - tx * hl + ty * hw, tip[1] - ty * hl - tx * hw]];
-  return { d: `M${a[0]},${a[1]}Q${c[0]},${c[1]} ${end[0]},${end[1]}`, head: "M" + head.join("L") + "Z", target: b };
+  // middle of a quadratic curve: 0.25*a + 0.5*c + 0.25*b; there the curve runs exactly parallel to a -> b
+  const m = [0.25 * a[0] + 0.5 * c[0] + 0.25 * b[0], 0.25 * a[1] + 0.5 * c[1] + 0.25 * b[1]];
+  const hl = Math.min(11 + width * 1.8, d * 0.35);       // head length (never longer than a third of a short line)
+  const hw = hl * 0.62;                                  // half of the head's width
+  const tip = [m[0] + ux * hl / 2, m[1] + uy * hl / 2];  // the head is centred on the middle point, pointing at the buyer
+  const base = [m[0] - ux * hl / 2, m[1] - uy * hl / 2];
+  const head = [tip, [base[0] - uy * hw, base[1] + ux * hw], [base[0] + uy * hw, base[1] - ux * hw]];
+  return { d: `M${a[0]},${a[1]}Q${c[0]},${c[1]} ${b[0]},${b[1]}`, head: "M" + head.join("L") + "Z" };
 }
 
 function overlay() {
@@ -495,10 +537,63 @@ function overlay() {
     .on("mousemove", (e, d) => showTip(e, d.iso))
     .on("mouseleave", hideTip);
 
-  // names: most important first; a name is skipped if it would overlap one already placed
+  // badges and lines first (the names below must avoid them).
+  // Exports: goods go from the picked country to the buyer; imports: from the seller to the picked country.
+  // The line always joins the picked country (a ring) to the partner (a numbered badge 1-2-3); the head in the
+  // middle of the line says which way the goods travel.
+  let arrows = [], badges = [], homes = [], leaders = [];
+  const from = sel && geoPoint(sel);
+  const badgeR = phone ? 10 : 11;                  // badge radius in pixels (big enough to read the number)
+  const s = from ? toScreen(from) : null;          // the picked country's capital on screen
+  if (from) {
+    const maxV = list.length ? list[0][1] : 1;     // the #1 partner's value, for the line widths
+    homes = [{ iso: sel, p: s }];                  // the ring on the picked country
+    list.forEach(([iso, v], i) => {
+      const ll = geoPoint(iso); if (!ll) return;
+      const cap = toScreen(ll);                    // the partner's capital on screen
+      badges.push({ iso, rank: i + 1, v, cap, p: cap.slice() });   // p = where the badge goes (starts on the capital)
+    });
+    // Neighbours (Spain -> France, Germany -> Netherlands) sit too close for a readable line, and their badges
+    // pile up. Push each badge out to at least minSep from the picked country, then push badges off each other.
+    const minSep = 2 * badgeR + 18;                // room for a short line with its head between ring and badge
+    const gap = 2 * badgeR + 6;                    // two badges never closer than this (centre to centre)
+    for (let round = 0; round < 12; round++) {     // a few rounds settle 3 badges
+      badges.forEach(b => {
+        let dx = b.p[0] - s[0], dy = b.p[1] - s[1], d = Math.hypot(dx, dy);
+        if (d >= minSep) return;
+        if (d < 0.5) { dx = 0; dy = -1; d = 1; }  // exactly on top of it: go straight up
+        b.p = [s[0] + dx / d * minSep, s[1] + dy / d * minSep];
+      });
+      for (let i = 0; i < badges.length; i++) for (let j = i + 1; j < badges.length; j++) {
+        const a = badges[i], b = badges[j];
+        let dx = b.p[0] - a.p[0], dy = b.p[1] - a.p[1], d = Math.hypot(dx, dy);
+        if (d >= gap) continue;
+        if (d < 0.5) { dx = 1; dy = 0; d = 1; }
+        const push = (gap - d) / 2;                // each badge moves half of the overlap, in opposite directions
+        a.p = [a.p[0] - dx / d * push, a.p[1] - dy / d * push];
+        b.p = [b.p[0] + dx / d * push, b.p[1] + dy / d * push];
+      }
+    }
+    badges.forEach((b, i) => {
+      const width = (phone ? 2.2 : 2.6) + (phone ? 3.4 : 4.6) * b.v / maxV;   // thicker = bigger flow
+      const g = state.flow === "x" ? arrowGeometry(s, b.p, width, i) : arrowGeometry(b.p, s, width, i);
+      arrows.push({ iso: b.iso, width, ...g });
+      if (Math.hypot(b.p[0] - b.cap[0], b.p[1] - b.cap[1]) > badgeR) leaders.push(b);   // badge was moved: dotted line back to the capital
+    });
+    arrows.reverse(); badges.reverse();            // draw #1 last so it sits on top
+  }
+
+  // names: most important first; a name is skipped if it would overlap one already placed (or a badge)
   const fs = phone ? 10 : 10.5;
   const cands = [];
-  key.forEach(iso => { const ll = geoPoint(iso); if (ll) { const p = toScreen(ll); cands.push({ id: "k" + iso, text: C[iso].n, x: p[0], y: p[1] - 13, size: 12.5, cls: "key", anchor: "middle" }); } });
+  key.forEach(iso => {                             // bold names of the picked country and its partners: tried above,
+    const b = badges.find(d => d.iso === iso);     // below, right, then left of their ring/badge
+    const ll = geoPoint(iso); if (!ll) return;
+    const p = b ? b.p : toScreen(ll), r = b ? badgeR + 9 : 14;
+    cands.push({ id: "k" + iso, text: C[iso].n, size: 12.5, cls: "key",
+                 alts: [{ x: p[0], y: p[1] - r, anchor: "middle" }, { x: p[0], y: p[1] + r, anchor: "middle" },
+                        { x: p[0] + r - 4, y: p[1], anchor: "start" }, { x: p[0] - r + 4, y: p[1], anchor: "end" }] });
+  });
   const showCapitals = k >= (phone ? 2.5 : 2.2);  // capital names only once zoomed in
   byArea.forEach(f => {
     if (key.has(f.iso) || f.baseArea * k * k < 1000) return;   // a country name needs ~1000 square pixels of land
@@ -511,42 +606,32 @@ function overlay() {
       cands.push({ id: "c" + f.iso, text: c.c, x: q[0] + 4, y: q[1], size: 9, cls: "cap" + (sel ? " faint" : ""), anchor: "start", needs: id });
     }
   });
-  const placed = [], boxes = [], placedIds = new Set();
+  const boxes = badges.map(b => [b.p[0] - badgeR, b.p[1] - badgeR, b.p[0] + badgeR, b.p[1] + badgeR]);   // badges are taken
+  if (s) boxes.push([s[0] - 7, s[1] - 7, s[0] + 7, s[1] + 7]);                                           // and the ring
+  const placed = [], placedIds = new Set();
   cands.forEach(l => {
     if (l.needs && !placedIds.has(l.needs)) return;                     // its country name did not fit: skip the capital too
     const w = l.text.length * l.size * 0.56 + 4, h = l.size + 3;
-    const x0 = l.anchor === "middle" ? l.x - w / 2 : l.x, y0 = l.y - h / 2;
-    const b = [x0, y0, x0 + w, y0 + h];
-    if (b[0] < 0 || b[2] > W || b[1] < 0 || b[3] > H) return;              // off screen
-    if (boxes.some(o => b[0] < o[2] && b[2] > o[0] && b[1] < o[3] && b[3] > o[1])) return;  // overlaps
-    boxes.push(b); placed.push(l); placedIds.add(l.id);
+    const spots = l.alts || [{ x: l.x, y: l.y, anchor: l.anchor }];      // where this name may go, best first
+    for (const o of spots) {
+      const x0 = o.anchor === "middle" ? o.x - w / 2 : o.anchor === "end" ? o.x - w : o.x, y0 = o.y - h / 2;
+      const b = [x0, y0, x0 + w, y0 + h];
+      if (b[0] < 0 || b[2] > W || b[1] < 0 || b[3] > H) continue;            // off screen
+      if (boxes.some(q => b[0] < q[2] && b[2] > q[0] && b[1] < q[3] && b[3] > q[1])) continue;  // overlaps
+      boxes.push(b); placed.push({ ...l, ...o }); placedIds.add(l.id);
+      break;
+    }
   });
   gLabels.selectAll("text").data(placed, d => d.id).join("text")
     .attr("class", d => "lbl " + d.cls).attr("x", d => d.x).attr("y", d => d.y)
     .attr("text-anchor", d => d.anchor).attr("dominant-baseline", "central").text(d => d.text);
 
-  // arrows (exports: from the picked country to the buyer; imports: from the seller to the picked country)
-  let arrows = [];
-  const from = sel && geoPoint(sel);
-  const ringR = phone ? 5 : 6;
-  if (from) {
-    const s = toScreen(from), maxV = list.length ? list[0][1] : 1;
-    arrows = list.map(([iso, v], i) => {
-      const ll = geoPoint(iso); if (!ll) return null;
-      const p = toScreen(ll);
-      if (Math.hypot(p[0] - s[0], p[1] - s[1]) < 20) return null;    // neighbours too close for an arrow at this zoom (name still bold)
-      const width = (phone ? 2.2 : 2.6) + (phone ? 3.4 : 4.6) * v / maxV;   // thicker = bigger flow
-      const g = state.flow === "x" ? arrowGeometry(s, p, width, i, ringR) : arrowGeometry(p, s, width, i, ringR);
-      return { iso, width, ...g };
-    }).filter(Boolean).reverse();                 // draw #1 last so it sits on top
-  }
   const ak = state.drawKey;
   gArrows.selectAll("g.arrow").data(arrows, d => ak + d.iso).join(
       enter => { const g = enter.append("g").attr("class", "arrow");
                  g.append("path").attr("class", "arc-halo grow").attr("pathLength", 1);
                  g.append("path").attr("class", "arc grow").attr("pathLength", 1);
                  g.append("path").attr("class", "flowdash grow");
-                 g.append("circle").attr("class", "ring grow");
                  g.append("path").attr("class", "head grow");
                  return g; })
     .each(function (d) {
@@ -554,8 +639,24 @@ function overlay() {
       g.select(".arc-halo").attr("d", d.d).attr("stroke-width", d.width + 5);
       g.select(".arc").attr("d", d.d).attr("stroke-width", d.width);
       g.select(".flowdash").attr("d", d.d).attr("stroke-width", Math.max(1.4, d.width * 0.4));
-      g.select(".ring").attr("cx", d.target[0]).attr("cy", d.target[1]).attr("r", ringR);
       g.select(".head").attr("d", d.head);
+    });
+  gBadges.selectAll("line.leader").data(leaders, d => d.iso).join("line")
+    .attr("class", "leader")
+    .attr("x1", d => d.cap[0]).attr("y1", d => d.cap[1]).attr("x2", d => d.p[0]).attr("y2", d => d.p[1]);
+  gBadges.selectAll("circle.home").data(homes, d => d.iso).join("circle")
+    .attr("class", "home").attr("r", phone ? 5 : 6).attr("cx", d => d.p[0]).attr("cy", d => d.p[1]);
+  gBadges.selectAll("g.badge").data(badges, d => ak + d.iso).join(
+      enter => { const g = enter.append("g").attr("class", "badge grow");
+                 g.append("circle");
+                 g.append("text").attr("text-anchor", "middle").attr("dominant-baseline", "central");
+                 return g; })
+    .raise()                                       // keep the draw order: #3, #2, then #1 on top of everything
+    .attr("transform", d => `translate(${d.p[0]},${d.p[1]})`)
+    .each(function (d) {
+      const g = d3.select(this);
+      g.select("circle").attr("r", badgeR);
+      g.select("text").attr("y", 0.5).text(d.rank);
     });
 }
 const byArea = features.filter(f => f.label).slice();   // sorted biggest first in build()
@@ -566,9 +667,12 @@ const byArea = features.filter(f => f.label).slice();   // sorted biggest first 
 const tip = document.getElementById("tip");
 function showTip(e, iso, fallbackName) {
   if (touchQuery.matches) return;
-  const c = C[iso];
+  const c = C[iso], sel = state.selected;
+  const deal = sel && iso !== sel && partnersOf(sel).find(p => p[0] === iso);   // [iso, $bn] if it is a top-10 partner of the picked country
   tip.innerHTML = c
-    ? `<b>${esc(c.n)}</b><br>${swatch(c.b)} ${money(c.b, true)} ${c.b >= 0 ? "surplus" : "deficit"}<br>` +
+    ? `<b>${esc(c.n)}</b><br>` +
+      (deal ? `${partnerSwatch(iso)} ${state.flow === "x" ? "Buys" : "Sells"} ${money(deal[1])} ${state.flow === "x" ? "from" : "to"} ${esc(C[sel].n)}<br>`
+            : `${sel ? "" : swatch(c.b) + " "}${money(c.b, true)} ${c.b >= 0 ? "surplus" : "deficit"}<br>`) +
       `<span class="muted">Exports ${money(c.x)} · Imports ${money(c.m)}${c.s === "m" ? "<br>Estimated from partners' data" : ""}</span>`
     : `<b>${esc(fallbackName || "")}</b><br><span class="muted">No data</span>`;
   const [x, y] = d3.pointer(e, viewMap);
@@ -594,6 +698,16 @@ function renderTotal() {                       // the total of the side being sh
 }
 
 function renderLegend() {                      // 5 red + 5 blue steps; the side not shown is faded
+  const sel = state.selected;
+  if (sel) {                                    // a country is picked: explain the partner colours instead
+    const hue = flowHue(), name = esc(C[sel].n);
+    document.getElementById("legend").innerHTML =
+      `<div class="ends"><span>${state.flow === "x" ? `Top 3 buyers of ${name}'s goods` : `Top 3 sellers to ${name}`}</span></div>` +
+      `<div class="lkey"><span class="item"><span class="sw" style="background:var(--sel-fill)"></span>${name}</span>` +
+      [2, 1, 0].map((s, i) => `<span class="item"><span class="sw" style="background:var(--${hue}-${s})"></span>#${i + 1}</span>`).join("") +
+      `</div>`;
+    return;
+  }
   const negOn = state.side === "deficit", posOn = state.side === "surplus";
   const sw = [4, 3, 2, 1, 0].map(i => `<span class="${negOn ? "" : "dim"}" style="background:var(--neg-${i})"></span>`).join("") +
              [0, 1, 2, 3, 4].map(i => `<span class="${posOn ? "" : "dim"}" style="background:var(--pos-${i})"></span>`).join("");
@@ -628,12 +742,12 @@ function renderPanel() {                       // the corner panel (a bottom she
       `<div class="seg small" role="group" aria-label="Partners to show">` +
       `<button type="button" data-side="surplus" aria-pressed="${state.flow === "x"}">Exports to</button>` +
       `<button type="button" data-side="deficit" aria-pressed="${state.flow === "m"}">Imports from</button></div>` +
-      `<p class="again">Click ${esc(c.n)} again to see its ${other}.</p>` +
+      `<p class="again">${state.flow === state.firstFlow ? `Click ${esc(c.n)} again to see its ${other}.` : `Click ${esc(c.n)} again to go back to the world map.`}</p>` +
       `<h3>Top 10 ${state.flow === "x" ? "buyers of its goods" : "sellers to it"}</h3>` +
       `<div class="tbl"><table><thead><tr><th class="rk">#</th><th class="name">${state.flow === "x" ? "Buyer" : "Seller"}</th><th>US$</th><th>Share</th></tr></thead><tbody>` +
-      list.map(([iso, v], i) => `<tr class="${i < ARROWS ? "on" : ""}"><td class="rk">${i + 1}</td>` +
+      list.map(([iso, v], i) => `<tr class="${i < ARROWS ? "on" : ""}"><td class="rk">${i < ARROWS ? `<span class="num">${i + 1}</span>` : i + 1}</td>` +
         `<td class="name"><button type="button" class="rowbtn" data-iso="${iso}">${esc(C[iso] ? C[iso].n : iso)}</button></td>` +
-        `<td>${money(v)}</td><td><small>${total > 0 ? (100 * v / total).toFixed(0) + "%" : ""}</small></td></tr>`).join("") +
+        `<td>${partnerSwatch(iso)} ${money(v)}</td><td><small>${total > 0 ? (100 * v / total).toFixed(0) + "%" : ""}</small></td></tr>`).join("") +
       `</tbody></table></div>`;
   }
   document.getElementById("close").onclick = () => { select(null); setPanel(false); };   // close = clear the pick too
@@ -666,14 +780,18 @@ pick.innerHTML = `<option value="">Pick a country…</option>` +
 pick.onchange = () => select(pick.value || null);
 
 function select(iso) {
-  if (iso && iso === state.selected) {          // the same country again: switch to its other side
-    setSide(state.side === "surplus" ? "deficit" : "surplus");
-    return;
+  if (iso && iso === state.selected) {          // the same country again:
+    if (state.flow === state.firstFlow) {       //   2nd click: switch to its other side
+      setSide(state.side === "surplus" ? "deficit" : "surplus");
+      return;
+    }
+    iso = null;                                 //   3rd click: back to the world map in red/blue
   }
   state.selected = iso && C[iso] ? iso : null;
   if (state.selected) {                         // first click: its BIGGER side (surplus -> exports, deficit -> imports)
     state.side = C[state.selected].b >= 0 ? "surplus" : "deficit";
     state.flow = FLOW_OF[state.side];
+    state.firstFlow = state.flow;               // remember the 1st click's side, to know when the 3rd click comes
   }
   state.drawKey = (state.selected || "") + state.flow;   // new key = arrows animate in again
   pick.value = state.selected || "";
@@ -694,15 +812,18 @@ function setPanel(open) {                       // open/close the top-10 panel; 
 }
 document.getElementById("toggle-panel").onclick = () => setPanel(!state.panelOpen);
 
-function showSelection(animate) {               // if the picked country or its arrows are off screen, move/zoom out until they fit
-  if (!state.selected || !projection) return;
+function showSelection(animate) {               // make the picked country and its top 3 fit on screen, and zoom in
+  if (!state.selected || !projection) return;   // when the partners are close neighbours, so their lines can be told apart
   const pts = [state.selected, ...arrowPartners(state.selected).map(p => p[0])]
-    .map(geoPoint).filter(Boolean).map(ll => projection(ll));             // positions at zoom 1
-  const inView = pts.every(p => { const q = state.t.apply(p); return q[0] > box.x0 + 10 && q[0] < box.x1 - 10 && q[1] > box.y0 + 10 && q[1] < box.y1 - 10; });
-  if (inView) return;                                                     // everything visible: leave the view alone
+    .map(geoPoint).filter(Boolean).map(ll => projection(ll));             // positions at zoom 1 (pts[0] = the picked country)
   const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
   const dx = Math.max(...xs) - Math.min(...xs) || 1, dy = Math.max(...ys) - Math.min(...ys) || 1;
-  const k = Math.max(1, Math.min(state.t.k, 0.85 * (box.x1 - box.x0) / dx, 0.85 * (box.y1 - box.y0) / dy));  // zoom out only as needed
+  const kFit = Math.min(14, 0.85 * (box.x1 - box.x0) / dx, 0.85 * (box.y1 - box.y0) / dy);   // the most zoom at which all still fit
+  const near = Math.min(...pts.slice(1).map(p => Math.hypot(p[0] - pts[0][0], p[1] - pts[0][1])), Infinity);  // closest partner, px at zoom 1
+  const kWant = Math.max(1, Math.min(kFit, 6, 70 / near));                // zoom so the closest partner is ~70 px away (if all still fit)
+  const inView = pts.every(p => { const q = state.t.apply(p); return q[0] > box.x0 + 10 && q[0] < box.x1 - 10 && q[1] > box.y0 + 10 && q[1] < box.y1 - 10; });
+  if (inView && state.t.k >= kWant * 0.9) return;                         // all visible and spread enough: leave the view alone
+  const k = Math.max(kWant, Math.min(state.t.k, kFit));                   // zoom in for room, or out only as needed
   const cx = (Math.max(...xs) + Math.min(...xs)) / 2, cy = (Math.max(...ys) + Math.min(...ys)) / 2;
   const t = fit(d3.zoomIdentity.translate((box.x0 + box.x1) / 2 - cx * k, (box.y0 + box.y1) / 2 - cy * k).scale(k));
   (animate ? svg.transition().duration(dur) : svg).call(zoom.transform, t);
