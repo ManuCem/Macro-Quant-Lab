@@ -155,6 +155,10 @@ Each folder is a self-contained experiment:
   who pays more to borrow, and 5-year CDS turned into an implied default probability,
   the spread study above. Run `python Yield_Curve/sovereign_spreads.py` (no API key).
   [▶ Open live dashboard](https://manucem.github.io/Macro-Quant-Lab/Yield_Curve/sovereign_spreads.html)
+- **Gold_Prices/** — gold vs the 10-year TIPS real yield (2003 onward): price chart,
+  scatter, rolling correlation and Pearson r on levels and on monthly changes. Run
+  `python Gold_Prices/gold_real_yield.py` (no API key; needs `yfinance` and `scipy`).
+  [▶ Open live page](https://manucem.github.io/Macro-Quant-Lab/Gold_Prices/gold_real_yield.html)
 - **bond-30y/** — pulls 30-year Treasury yield data, engineers technical
   features, and predicts next-day direction (up/down), validated with
   time-series cross-validation.
