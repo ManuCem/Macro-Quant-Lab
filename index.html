@@ -35,7 +35,7 @@
           transition: border-color .15s, transform .15s, box-shadow .15s; }
   .card:hover { border-color: var(--hover); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.08); }
   .card:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
-  .card .thumb { aspect-ratio: 16 / 9; background: var(--page); overflow: hidden;
+  .card .thumb { aspect-ratio: 16 / 9; background: #ffffff; overflow: hidden;  /* always white, never black, even in dark mode */
                  border-bottom: 3px solid var(--accent); }
   .card .thumb img { width: 100%; height: 100%; object-fit: cover; display: block;
                       transition: transform .3s; }
@@ -103,13 +103,13 @@
       </span>
     </a>
 
-    <!-- Card 5: gold price vs the 10-year real yield, with Pearson correlations -->
-    <a class="card" href="Gold_Prices/gold_real_yield.html" style="--accent:#eda100">
-      <span class="thumb"><img src="Gold_Prices/gold_real_yield_preview.png" alt="" loading="lazy" width="640" height="360"></span>
+    <!-- Card 5: real yields, TIPS, bonds and gold (folder tips-gold-bonds) -->
+    <a class="card" href="tips-gold-bonds/tips_gold_bonds.html" style="--accent:#eda100">
+      <span class="thumb"><img src="tips-gold-bonds/tips_gold_bonds_preview.png" alt="" loading="lazy" width="640" height="360"></span>
       <span class="body">
         <h2>Gold vs real yields</h2>
-        <p>Does gold fall when the real yield of bonds rises? Price chart and Pearson
-           correlations, before and after the 2022 break.</p>
+        <p>Why do bonds and gold move with the real yield? TIPS, expected inflation and CPI
+           explained step by step, with sliders to try it yourself.</p>
         <span class="go">Open the page <span aria-hidden="true">&rarr;</span></span>
       </span>
     </a>
