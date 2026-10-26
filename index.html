@@ -26,6 +26,14 @@
   h1 { font-size: 32px; line-height: 1.2; margin: 0 0 8px; letter-spacing: -0.01em; }
   .lead { margin: 0 0 40px; color: var(--ink-2); max-width: 56ch; }
 
+  /* GitHub button under the intro; 44px tall so it is easy to tap on a phone */
+  .repo { margin: -24px 0 32px; }
+  .repo a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px;
+            border: 1px solid var(--border); border-radius: 8px; background: var(--surface);
+            color: var(--ink); font-weight: 600; font-size: 15px; text-decoration: none; }
+  .repo a:hover { border-color: var(--hover); }
+  .repo a:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
   /* Cards: two columns on wide screens, stacked on narrow ones */
   .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
   .card { display: flex; flex-direction: column; gap: 0; overflow: hidden;
@@ -57,6 +65,7 @@
   <h1>Macro Quant Lab</h1>
   <p class="lead">A learning lab for macroeconomics, machine learning and quantitative
      trading. Pick an experiment below.</p>
+  <p class="repo"><a href="https://github.com/ManuCem/Macro-Quant-Lab" target="_blank" rel="noopener">View the code on GitHub <span aria-hidden="true">&#8599;</span></a></p>
 
   <nav class="cards" aria-label="Experiments">
     <!-- Card 1: goes straight to the VIX dashboard -->
