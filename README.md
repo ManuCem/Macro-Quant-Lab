@@ -101,6 +101,40 @@ pip install pandas requests
 python Deficit_Surplus/trade_balance.py   # downloads from UN Comtrade (first run ~10 min) and writes trade_balance.html
 ```
 
+## Featured: is France now riskier than Italy?
+
+**[▶ Open live dashboard](https://manucem.github.io/Macro-Quant-Lab/Yield_Curve/sovereign_spreads.html)**
+
+[![France and Italy 10-year spreads over Germany](Yield_Curve/sovereign_spreads_preview.png)](https://manucem.github.io/Macro-Quant-Lab/Yield_Curve/sovereign_spreads.html)
+
+Germany is the euro area's "safe" borrower, so the gap between a country's 10-year
+yield and Germany's (the spread, in basis points; 100 bp = 1 percentage point) measures
+how risky the market thinks it is. Using monthly 10-year yields from the ECB data portal
+(no API key) since 1999, this tracks France and Italy against Germany, adds the latest
+daily spreads and 5-year credit default swaps (CDS, insurance on a government's debt)
+from the press, and turns each CDS premium into the yearly default probability it implies
+(premium / (1 − 40% recovery)).
+
+**Takeaway:** Italy used to be the risky one. France's spread is back at the 2011
+euro-crisis record (~154 bp on 20 Oct 2026), France paid more than Italy in 5 of the
+last 12 months, and insuring French debt costs more than insuring Italian debt.
+
+| Country | Spread over Germany | Record since 1999 | 5y CDS | Implied default risk / year |
+|---|---|---|---|---|
+| France | ~154 bp (20 Oct)* | 154 bp (Nov 2011) | 79.5 bp | ~1.3% |
+| Italy | ~107 bp (16 Oct)* | 519 bp (Nov 2011) | 68.0 bp | ~1.1% |
+| Germany | — | — | 7.3 bp | ~0.1% |
+
+\* latest daily close reported in the press; the ECB monthly average for Sep 2026 is
+97 bp (France) and 89 bp (Italy). The CDS quotes come from different days (no free CDS feed).
+
+Run it yourself:
+
+```bash
+pip install pandas
+python Yield_Curve/sovereign_spreads.py   # downloads from the ECB (no API key) and writes sovereign_spreads.html
+```
+
 ## What's here
 
 Each folder is a self-contained experiment:
@@ -117,6 +151,14 @@ Each folder is a self-contained experiment:
   (top 10 in a corner table). Click a country again to switch between its exports and imports, and a third time to go back to the world map. Run
   `python Deficit_Surplus/trade_balance.py` (no API key; first run ~10 min).
   [▶ Open live map](https://manucem.github.io/Macro-Quant-Lab/Deficit_Surplus/trade_balance.html)
+- **Yield_Curve/** — France and Italy 10-year yields vs Germany (ECB data since 1999),
+  who pays more to borrow, and 5-year CDS turned into an implied default probability,
+  the spread study above. Run `python Yield_Curve/sovereign_spreads.py` (no API key).
+  [▶ Open live dashboard](https://manucem.github.io/Macro-Quant-Lab/Yield_Curve/sovereign_spreads.html)
+- **Gold_Prices/** — gold vs the 10-year TIPS real yield (2003 onward): price chart,
+  scatter, rolling correlation and Pearson r on levels and on monthly changes. Run
+  `python Gold_Prices/gold_real_yield.py` (no API key; needs `yfinance` and `scipy`).
+  [▶ Open live page](https://manucem.github.io/Macro-Quant-Lab/Gold_Prices/gold_real_yield.html)
 - **bond-30y/** — pulls 30-year Treasury yield data, engineers technical
   features, and predicts next-day direction (up/down), validated with
   time-series cross-validation.

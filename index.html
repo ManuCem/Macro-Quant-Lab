@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Macro Quant Lab</title>
+<style>
+  /* Colours as tokens: light by default, dark when the viewer's system is dark */
+  :root {
+    color-scheme: light dark;
+    --page: #f9f9f7;  --surface: #fcfcfb;  --ink: #0b0b0b;  --ink-2: #52514e;
+    --border: #e1e0d9;  --hover: #c3c2b7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --page: #0d0d0d; --surface: #1a1a19; --ink: #ffffff; --ink-2: #c3c2b7;
+            --border: #2c2c2a; --hover: #4a4a46; }
+  }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink);
+         font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+
+  /* One centred column; the side padding keeps a gutter on phones */
+  main { max-width: 760px; margin: 0 auto; padding: 56px 20px 40px; }
+
+  h1 { font-size: 32px; line-height: 1.2; margin: 0 0 8px; letter-spacing: -0.01em; }
+  .lead { margin: 0 0 40px; color: var(--ink-2); max-width: 56ch; }
+
+  /* Cards: two columns on wide screens, stacked on narrow ones */
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+  .card { display: flex; flex-direction: column; gap: 0; overflow: hidden;
+          background: var(--surface); border: 1px solid var(--border);
+          border-radius: 10px;
+          color: inherit; text-decoration: none;
+          transition: border-color .15s, transform .15s, box-shadow .15s; }
+  .card:hover { border-color: var(--hover); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.08); }
+  .card:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .card .thumb { aspect-ratio: 16 / 9; background: #ffffff; overflow: hidden;  /* always white, never black, even in dark mode */
+                 border-bottom: 3px solid var(--accent); }
+  .card .thumb img { width: 100%; height: 100%; object-fit: cover; display: block;
+                      transition: transform .3s; }
+  .card:hover .thumb img { transform: scale(1.04); }
+  .card .body { display: flex; flex-direction: column; gap: 6px; padding: 18px 20px 18px; flex: 1; }
+  .card h2 { font-size: 19px; margin: 0; }
+  .card p { margin: 0; color: var(--ink-2); font-size: 15px; }
+  .card .go { margin-top: auto; padding-top: 14px; font-weight: 600; color: var(--ink); }
+  .card:hover .go span { display: inline-block; transform: translateX(4px); }
+  .go span { transition: transform .15s; }
+
+  footer { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--border);
+           color: var(--ink-2); font-size: 14px; }
+  footer a { color: inherit; display: inline-block; padding: 12px 4px; margin: -12px -4px; }  /* bigger tap area, same look */
+</style>
+</head>
+<body>
+<main>
+  <h1>Macro Quant Lab</h1>
+  <p class="lead">A learning lab for macroeconomics, machine learning and quantitative
+     trading. Pick an experiment below.</p>
+
+  <nav class="cards" aria-label="Experiments">
+    <!-- Card 1: goes straight to the VIX dashboard -->
+    <a class="card" href="VIX/output/shocks.html" style="--accent:#2a78d6">
+      <span class="thumb"><img src="VIX/output/shocks_preview.png" alt="" loading="lazy" width="640" height="360"></span>
+      <span class="body">
+        <h2>VIX vs realized volatility</h2>
+        <p>Was the VIX right? Its forecast against the volatility that actually followed,
+           around the dot-com crash, 2008, Covid and the 2025 tariff shock.</p>
+        <span class="go">Open dashboard <span aria-hidden="true">&rarr;</span></span>
+      </span>
+    </a>
+
+    <!-- Card 2: goes to a second menu with the ECB and Fed pages -->
+    <a class="card" href="Rates_and_Phillips/index.html" style="--accent:#eb6834">
+      <span class="thumb"><img src="Rates_and_Phillips/rates_phillips_preview.png" alt="" loading="lazy" width="640" height="360"></span>
+      <span class="body">
+        <h2>Interest rates &amp; Phillips curve</h2>
+        <p>ECB and Fed policy rates, and whether near-zero rates brought a recovery in
+           2008 and Covid (Phillips curve view).</p>
+        <span class="go">Open the section <span aria-hidden="true">&rarr;</span></span>
+      </span>
+    </a>
+
+    <!-- Card 3: world map of trade surpluses and deficits -->
+    <a class="card" href="Deficit_Surplus/trade_balance.html" style="--accent:#1baf7a">
+      <span class="thumb"><img src="Deficit_Surplus/trade_balance_preview.png" alt="" loading="lazy" width="640" height="360"></span>
+      <span class="body">
+        <h2>Trade surplus &amp; deficit map</h2>
+        <p>Who sells more to the world than it buys? Every country's trade balance in goods,
+           and arrows to its top export and import partners.</p>
+        <span class="go">Open the map <span aria-hidden="true">&rarr;</span></span>
+      </span>
+    </a>
+
+    <!-- Card 4: France and Italy bond spreads over Germany, CDS, and the Oct 2026 protests -->
+    <a class="card" href="Yield_Curve/sovereign_spreads.html" style="--accent:#eda100">
+      <span class="thumb"><img src="Yield_Curve/sovereign_spreads_preview.png" alt="" loading="lazy" width="640" height="360"></span>
+      <span class="body">
+        <h2>France vs Italy risk premium</h2>
+        <p>What France and Italy pay over Germany to borrow, credit default swaps, and the
+           October 2026 protests in both countries.</p>
+        <span class="go">Open the page <span aria-hidden="true">&rarr;</span></span>
+      </span>
+    </a>
+
+    <!-- Card 5: real yields, TIPS, bonds and gold (folder tips-gold-bonds) -->
+    <a class="card" href="tips-gold-bonds/tips_gold_bonds.html" style="--accent:#eda100">
+      <span class="thumb"><img src="tips-gold-bonds/tips_gold_bonds_preview.png" alt="" loading="lazy" width="640" height="360"></span>
+      <span class="body">
+        <h2>Gold vs real yields</h2>
+        <p>Why do bonds and gold move with the real yield? TIPS, expected inflation and CPI
+           explained step by step, with sliders to try it yourself.</p>
+        <span class="go">Open the page <span aria-hidden="true">&rarr;</span></span>
+      </span>
+    </a>
+
+  </nav>
+
+  <footer>
+    Code on <a href="https://github.com/ManuCem/Macro-Quant-Lab">GitHub</a>.
+  </footer>
+</main>
+</body>
+</html>
