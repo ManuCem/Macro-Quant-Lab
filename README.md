@@ -135,6 +135,35 @@ pip install pandas
 python Yield_Curve/sovereign_spreads.py   # downloads from the ECB (no API key) and writes sovereign_spreads.html
 ```
 
+## Featured: why do bonds and gold move with real yields?
+
+**[▶ Open live page](https://manucem.github.io/Macro-Quant-Lab/tips-gold-bonds/tips_gold_bonds.html)**
+
+[![Real yields: TIPS, bonds and gold](tips-gold-bonds/tips_gold_bonds_preview.png)](https://manucem.github.io/Macro-Quant-Lab/tips-gold-bonds/tips_gold_bonds.html)
+
+A learning page, explained step by step with two sliders. A nominal Treasury yield
+splits into a real yield (what a TIPS pays, since its principal grows with CPI) plus
+expected inflation (the breakeven). Gold pays no coupon, so the real yield is what you
+give up by holding it. Nothing is downloaded: the October 2026 reference values are
+typed in by hand and only illustrative.
+
+**Takeaway:** nominal 5.1% = real 2.65% + breakeven 2.3% (a 0.15-point rounding gap).
+A plain bond beats a TIPS only if actual inflation stays below ~2.4%; a $1,000 TIPS at
+3.7% CPI earns $64.48 (+6.45%), which is still a 2.65% real return.
+
+| Reference value (Oct 2026) | Level |
+|---|---|
+| 10-year nominal yield | 5.1% |
+| 10-year TIPS (real) yield | 2.65% |
+| 10-year breakeven (expected inflation) | 2.3% |
+| US CPI inflation | 3.7% |
+
+Run it yourself:
+
+```bash
+python tips-gold-bonds/tips_gold_bonds.py   # standard library only; writes tips_gold_bonds.html
+```
+
 ## What's here
 
 Each folder is a self-contained experiment:
@@ -155,10 +184,11 @@ Each folder is a self-contained experiment:
   who pays more to borrow, and 5-year CDS turned into an implied default probability,
   the spread study above. Run `python Yield_Curve/sovereign_spreads.py` (no API key).
   [▶ Open live dashboard](https://manucem.github.io/Macro-Quant-Lab/Yield_Curve/sovereign_spreads.html)
-- **Gold_Prices/** — gold vs the 10-year TIPS real yield (2003 onward): price chart,
-  scatter, rolling correlation and Pearson r on levels and on monthly changes. Run
-  `python Gold_Prices/gold_real_yield.py` (no API key; needs `yfinance` and `scipy`).
-  [▶ Open live page](https://manucem.github.io/Macro-Quant-Lab/Gold_Prices/gold_real_yield.html)
+- **tips-gold-bonds/** — real yields explained: nominal = real + breakeven, how a TIPS
+  adjusts with CPI, plain bond vs TIPS by actual inflation, and why gold competes with
+  the real yield (two sliders). Run `python tips-gold-bonds/tips_gold_bonds.py` (standard
+  library only).
+  [▶ Open live page](https://manucem.github.io/Macro-Quant-Lab/tips-gold-bonds/tips_gold_bonds.html)
 - **bond-30y/** — pulls 30-year Treasury yield data, engineers technical
   features, and predicts next-day direction (up/down), validated with
   time-series cross-validation.
