@@ -827,7 +827,7 @@ const gLabels = gOverlay.append("g");
 const gArrows = gOverlay.append("g").attr("class", "arrows");
 const gBadges = gOverlay.append("g").attr("class", "arrows");   // the 1-2-3 badges sit above every line, so no line hides a number
 const gHits = gOverlay.append("g");             // invisible bigger tap targets for tiny countries
-let W = 0, H = 0, projection, path, box, home = d3.zoomIdentity, lastInsets = "";
+let W = 0, H = 0, projection, path, box, home = d3.zoomIdentity, lastInsets = "", started = false;
 
 // mouse: wheel + drag; finger: one finger moves, two fingers zoom (the map is the whole screen, so nothing else needs the finger)
 const zoom = d3.zoom()
@@ -882,9 +882,10 @@ function build() {
   const centre = projection([12, 20]);
   home = k0 > 1 ? fit(d3.zoomIdentity.translate((box.x0 + box.x1) / 2 - centre[0] * k0, (box.y0 + box.y1) / 2 - (by0 + by1) / 2 * k0).scale(k0))
                 : d3.zoomIdentity;
-  svg.interrupt().call(zoom.transform, home);
+  // first draw: start at home. Later rebuilds (panel opens/closes, rotation): keep the zoom the user already has
+  svg.interrupt().call(zoom.transform, started ? fit(state.t) : home);
+  started = true;
   paint();
-  showSelection(false);
 }
 gBack.on("click", () => select(null));
 
@@ -1191,8 +1192,7 @@ function renderTable() {                       // "How to read it": every countr
 function setSide(side) {                        // Surpluses <-> Deficits (with a country picked: its exports <-> imports)
   state.side = side;
   if (state.selected) { state.flow = FLOW_OF[side]; state.drawKey = state.selected + state.flow; }
-  paint();
-  showSelection(true);
+  paint();                                      // redraw only; the view stays where the user left it
 }
 document.querySelectorAll(".controls [data-side]").forEach(b => b.onclick = () => setSide(b.dataset.side));
 
@@ -1220,8 +1220,7 @@ function select(iso) {
   history.replaceState(null, "", state.selected ? "#" + state.selected : location.pathname + location.search);
   hideTip();
   if (state.selected && !state.panelOpen) { setPanel(true); return; }   // opening the panel rebuilds the map (and shows the arrows)
-  paint();
-  showSelection(true);
+  paint();                                      // arrows redraw; the zoom and position are left exactly as they are
 }
 
 function setPanel(open) {                       // open/close the top-10 panel; the map makes room for it
@@ -1233,23 +1232,6 @@ function setPanel(open) {                       // open/close the top-10 panel; 
   build();
 }
 document.getElementById("toggle-panel").onclick = () => setPanel(!state.panelOpen);
-
-function showSelection(animate) {               // make the picked country and its top 3 fit on screen, and zoom in
-  if (!state.selected || !projection) return;   // when the partners are close neighbours, so their lines can be told apart
-  const pts = [state.selected, ...arrowPartners(state.selected).map(p => p[0])]
-    .map(geoPoint).filter(Boolean).map(ll => projection(ll));             // positions at zoom 1 (pts[0] = the picked country)
-  const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
-  const dx = Math.max(...xs) - Math.min(...xs) || 1, dy = Math.max(...ys) - Math.min(...ys) || 1;
-  const kFit = Math.min(14, 0.85 * (box.x1 - box.x0) / dx, 0.85 * (box.y1 - box.y0) / dy);   // the most zoom at which all still fit
-  const near = Math.min(...pts.slice(1).map(p => Math.hypot(p[0] - pts[0][0], p[1] - pts[0][1])), Infinity);  // closest partner, px at zoom 1
-  const kWant = Math.max(1, Math.min(kFit, 6, 70 / near));                // zoom so the closest partner is ~70 px away (if all still fit)
-  const inView = pts.every(p => { const q = state.t.apply(p); return q[0] > box.x0 + 10 && q[0] < box.x1 - 10 && q[1] > box.y0 + 10 && q[1] < box.y1 - 10; });
-  if (inView && state.t.k >= kWant * 0.9) return;                         // all visible and spread enough: leave the view alone
-  const k = Math.max(kWant, Math.min(state.t.k, kFit));                   // zoom in for room, or out only as needed
-  const cx = (Math.max(...xs) + Math.min(...xs)) / 2, cy = (Math.max(...ys) + Math.min(...ys)) / 2;
-  const t = fit(d3.zoomIdentity.translate((box.x0 + box.x1) / 2 - cx * k, (box.y0 + box.y1) / 2 - cy * k).scale(k));
-  (animate ? svg.transition().duration(dur) : svg).call(zoom.transform, t);
-}
 
 // "How to read it": a separate view on the same page
 function showNotes(open) {
