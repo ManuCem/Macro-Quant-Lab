@@ -164,6 +164,38 @@ Run it yourself:
 python tips-gold-bonds/tips_gold_bonds.py   # standard library only; writes tips_gold_bonds.html
 ```
 
+## Featured: is money rotating between big tech, bonds and gold?
+
+**[▶ Open live dashboard](https://manucem.github.io/Macro-Quant-Lab/nasdaq-bonds/nasdaq_bonds.html)**
+
+[![Nasdaq 100, long bonds, gold and the 10-year yield](nasdaq-bonds/nasdaq_bonds_preview.png)](https://manucem.github.io/Macro-Quant-Lab/nasdaq-bonds/nasdaq_bonds.html)
+
+Two stories pull in opposite directions. **Rate fear:** higher yields shrink the value of
+tech's far-away profits, so yields up = Nasdaq down (negative correlation). **Rotation:**
+investors sell tech and buy Treasuries, pushing bond prices up and yields down, so the
+Nasdaq and yields move *together* (positive correlation). Using daily Yahoo Finance data
+(Nasdaq 100, 10-year yield, the TLT long-bond ETF, gold), this measures the correlation of
+daily moves over rolling 20- and 60-day windows for 5 years, and checks where the money went
+on the Nasdaq's down days.
+
+**Takeaway (data to 28 Oct 2026):** the last 20 trading days are a rotation: correlation
++0.59; the Nasdaq fell 2.0%, the 10-year yield 25 bp, and long bonds gained 4.5%. On 8 of the
+10 Nasdaq down days bonds rose, gold only on 3: the haven has been Treasuries, not gold. The
+link is recent and unstable: +0.07 over 60 days, −0.19 over a year, −0.67 in June 2026.
+
+| Window | Corr. Nasdaq vs 10y yield | Nasdaq | 10y yield | Long bonds (TLT) | Gold | Regime |
+|---|---|---|---|---|---|---|
+| Last 20 days | +0.59 | −2.0% | −25 bp | +4.5% | −3.2% | Rotation |
+| Last 60 days | +0.07 | +0.3% | +42 bp | −1.4% | −2.4% | No clear link |
+| Last year | −0.19 | +14.1% | +99 bp | −7.0% | +1.3% | No clear link |
+
+Run it yourself:
+
+```bash
+pip install yfinance pandas numpy
+python nasdaq-bonds/nasdaq_bonds.py   # downloads from Yahoo Finance and writes nasdaq_bonds.html
+```
+
 ## What's here
 
 Each folder is a self-contained experiment:
@@ -189,6 +221,11 @@ Each folder is a self-contained experiment:
   the real yield (two sliders). Run `python tips-gold-bonds/tips_gold_bonds.py` (standard
   library only).
   [▶ Open live page](https://manucem.github.io/Macro-Quant-Lab/tips-gold-bonds/tips_gold_bonds.html)
+- **nasdaq-bonds/** — Nasdaq 100 vs the 10-year yield, long bonds (TLT) and gold: rolling
+  20- and 60-day correlations over 5 years ("rate fear" vs "rotation"), a day-by-day scatter
+  and where the money went on tech's bad days. Run `python nasdaq-bonds/nasdaq_bonds.py`
+  (Yahoo Finance, no API key).
+  [▶ Open live dashboard](https://manucem.github.io/Macro-Quant-Lab/nasdaq-bonds/nasdaq_bonds.html)
 - **bond-30y/** — pulls 30-year Treasury yield data, engineers technical
   features, and predicts next-day direction (up/down), validated with
   time-series cross-validation.

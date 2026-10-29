@@ -255,6 +255,9 @@ cv/*.pdf
 !Deficit_Surplus/lib/
 !Deficit_Surplus/lib/*.js
 
+# Local working notes, not for the repo
+rollout.txt
+
 # Private CV working folder (never commit)
 cv_claude/
 **/cv_claude/
