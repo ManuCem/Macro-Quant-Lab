@@ -199,46 +199,80 @@ def main():
 # ===========================================================================
 
 ECHARTS_URL = "https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"  # Apache ECharts, a fixed version
+FONTS_URL = "https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;700&display=swap"  # the Lab fonts
 
+# Look: the "Lab" design every project page uses (see CLAUDE.md): green header band, brass accents, white panels,
+# the same fonts as the homepage. Colours: one fixed hue per country, France = blue, Italy = green, Germany = grey.
+# Text always uses the ink tokens and names the country in words, never colour alone.
 CSS = """
-:root{color-scheme:light dark;--page:#fbfaf7;--surface:#ffffff;--ink:#0b0b0b;--ink-2:#52514e;--muted:#898781;--grid:#e1e0d9;--axis:#c3c2b7;
-  --fr:#2a78d6;--it:#1baf7a;--de:#52514e;--accent:#eb6834}
-@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--page:#0d0d0d;--surface:#1a1a19;--ink:#fff;--ink-2:#c3c2b7;--muted:#9a988f;
-  --grid:#2c2c2a;--axis:#4a4a46;--fr:#5b9be6;--it:#2fc48f;--de:#b5b3aa}}
-:root[data-theme=dark]{--page:#0d0d0d;--surface:#1a1a19;--ink:#fff;--ink-2:#c3c2b7;--muted:#9a988f;--grid:#2c2c2a;--axis:#4a4a46;--fr:#5b9be6;--it:#2fc48f;--de:#b5b3aa}
+:root{color-scheme:light dark;--band:#4a2414;--band-ink:#e4e6ea;--brass:#cf6e3a;--page:#f6f5f2;--surface:#fff;--ink:#16181d;--ink-2:#555a63;
+  --muted:#868b94;--grid:#e4e2dc;--axis:#c9c7c0;--fr:#2a5db0;--it:#1f7a55;--de:#6f7a75}
+@media (prefers-color-scheme:dark){:root{--band:#33180d;--brass:#ec9665;--page:#0f1012;--surface:#18191d;--ink:#ececee;--ink-2:#aaadb5;
+  --muted:#80848c;--grid:#2a2c31;--axis:#3f4248;--fr:#6d9be0;--it:#3fa37c;--de:#a5b2ab}}
 *{box-sizing:border-box}
-body{margin:0;background:var(--page);color:var(--ink);font:15px/1.55 system-ui,-apple-system,Segoe UI,sans-serif}
-main{max-width:1000px;margin:0 auto;padding:16px max(16px,env(safe-area-inset-right)) 40px max(16px,env(safe-area-inset-left))}
-h1{font-size:1.45rem;line-height:1.25;margin:.4rem 0}
-h2{font-size:1.1rem;margin:2rem 0 .4rem}
-h3{font-size:1rem;margin:1rem 0 .3rem}
-p{margin:.4rem 0 .8rem}
-.sub{color:var(--ink-2)}
-a{color:var(--fr)}
-a.back{display:inline-flex;align-items:center;min-height:44px;text-decoration:none}
-.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:12px 0}
-.tile{background:var(--surface);border:1px solid var(--grid);border-radius:10px;padding:10px 12px}
-.tile b{display:block;font-size:1.35rem}
-.tile span{color:var(--muted);font-size:.85rem}
-.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:middle}
-.chart{width:100%;height:420px;background:var(--surface);border:1px solid var(--grid);border-radius:10px}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--page);color:var(--ink);font:16px/1.6 "DM Sans",system-ui,-apple-system,"Segoe UI",sans-serif}
+h1,h2,.kpi b{font-family:"DM Serif Display",Georgia,serif;font-weight:400}
+a{color:inherit}
+.in{max-width:1000px;margin:0 auto;padding:0 max(20px,env(safe-area-inset-right)) 0 max(20px,env(safe-area-inset-left))}
+.band{background:var(--band);color:var(--band-ink);padding:8px 0 96px}
+a.back{display:inline-flex;align-items:center;min-height:44px;color:var(--band-ink);text-decoration:none;font-size:14px}
+a.back:hover{color:#fff}
+.eyebrow{margin:24px 0 12px;color:var(--brass);font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase}
+h1{margin:0;color:#fff;font-size:clamp(32px,5.5vw,50px);line-height:1.08;max-width:20ch}
+.answer{margin:18px 0 0;max-width:68ch}
+.answer b{color:#fff}
+.meta{margin:14px 0 0;font-size:13px;opacity:.75}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.kpis.top{margin-top:-64px}
+.kpi{background:var(--surface);border:1px solid var(--grid);border-radius:12px;padding:16px 18px}
+.top .kpi{box-shadow:0 14px 34px rgba(0,0,0,.10)}
+.kpi b{display:block;font-size:30px;font-variant-numeric:tabular-nums}
+.kpi span{font-size:13px;color:var(--ink-2)}
+.panel{background:var(--surface);border:1px solid var(--grid);border-radius:14px;padding:28px;margin-top:20px}
+.panel .tag{margin:0;color:var(--brass);font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
+h2{margin:4px 0 2px;font-size:28px;line-height:1.15}
+.dek{margin:0 0 18px;font-weight:700}
+.how{background:var(--page);border-radius:10px;padding:12px 16px;margin:0 0 18px;font-size:15px;color:var(--ink-2)}
+.how b,.so b{color:var(--ink)}
+.so{border-left:3px solid var(--brass);padding:2px 0 2px 16px;margin:20px 0 0}
+.so p{margin:0 0 8px}
+.chart{width:100%;height:420px}
 .chart.short{height:260px}
-.note{color:var(--muted);font-size:.85rem}
-.read{background:var(--surface);border-left:4px solid var(--accent);border-radius:6px;padding:10px 14px;margin:12px 0}
-.cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.card{background:var(--surface);border:1px solid var(--grid);border-top:4px solid var(--c);border-radius:10px;padding:4px 16px 10px}
-.card ul{padding-left:1.1rem;margin:.3rem 0}
-.card li{margin:.3rem 0}
-details{margin-top:1.5rem}summary{min-height:44px;display:flex;align-items:center;cursor:pointer;color:var(--ink-2)}
-.scroll{overflow-x:auto;border:1px solid var(--grid);border-radius:10px}
-table{border-collapse:collapse;width:100%;background:var(--surface);font-variant-numeric:tabular-nums}
-th,td{padding:8px 10px;border-bottom:1px solid var(--grid);text-align:right;white-space:nowrap}
-th:first-child,td:first-child{text-align:left;position:sticky;left:0;background:var(--surface)}
-.sources li{margin:.2rem 0}
-.sources a{display:inline-block;padding:11px 0;margin:-5px 0}
-ul.sources{padding-left:1.1rem}
-footer{margin-top:2.5rem;padding-top:1rem;border-top:1px solid var(--grid);color:var(--muted);font-size:.85rem}
-@media (max-width:640px){th{white-space:normal}th,td{padding:8px 6px}.cols{grid-template-columns:1fr}.chart{height:480px}.chart.short{height:300px}h1{font-size:1.25rem}}
+.label{margin:18px 0 4px;font-size:13px;font-weight:600;color:var(--ink-2)}
+.note{color:var(--muted);font-size:13px;margin:6px 0 0}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:8px;vertical-align:middle}
+.stories{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.story{border-top:3px solid var(--c);padding-top:12px}
+.story h3{margin:0 0 4px;font-size:17px}
+.story ul{margin:0;padding-left:1.1rem;color:var(--ink-2);font-size:15px}
+.story li{margin:0 0 8px}
+.story li b{color:var(--ink)}
+.gloss{display:grid;grid-template-columns:1fr 1fr;gap:14px 28px;margin:0}
+.gloss div{margin:0}
+.gloss dt{font-weight:700}
+.gloss dd{margin:2px 0 0;color:var(--ink-2);font-size:15px}
+.take{margin:0;padding-left:1.2rem}
+.take li{margin:0 0 12px}
+.take li::marker{color:var(--brass)}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:14px}
+th,td{padding:9px 10px;border-bottom:1px solid var(--grid);text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left;position:sticky;left:0;background:var(--surface);padding-left:0}
+th{font-weight:600;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+.refs{margin:36px 0 0;color:var(--muted);font-size:13px;line-height:1.45}
+.refs h3{margin:0 0 4px;font:700 12px/1.4 "DM Sans",system-ui,sans-serif;letter-spacing:.12em;text-transform:uppercase}
+.refs ul{list-style:none;margin:0;padding:0}
+.refs a{display:flex;align-items:center;min-height:40px;padding:6px 0;color:var(--muted);text-decoration:none}
+.refs a:hover{color:var(--ink);text-decoration:underline}
+footer{margin-top:40px;background:var(--band);color:var(--band-ink);font-size:13px}
+footer .in{padding-top:20px;padding-bottom:20px}
+@media (max-width:720px){.kpis{grid-template-columns:1fr 1fr;gap:10px}.panel{padding:20px 16px}.band{padding-bottom:84px}h2{font-size:24px}}
+@media (max-width:640px){
+  .chart{height:480px}.chart.short{height:300px}
+  .stories,.gloss{grid-template-columns:1fr;gap:18px}
+  th,td{padding:8px 4px;font-size:13px}th{white-space:normal}
+}
 """
 
 JS = """
@@ -246,21 +280,41 @@ const DATA = __DATA__;                                          // everything Py
 const narrowMQ = window.matchMedia("(max-width: 640px)");       // true on a phone-width screen
 const isTouch = window.matchMedia("(pointer: coarse)").matches; // a finger instead of a mouse
 const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();  // read a colour token
+const sliderStyle = () => ({                                   // zoom slider in the page colours (the ECharts default bar is light grey and glares in dark mode)
+  backgroundColor: "transparent", fillerColor: "rgba(128,128,128,.16)",
+  handleStyle: {color: css("--surface"), borderColor: css("--axis")},
+  moveHandleStyle: {color: css("--axis"), opacity: 1},
+  emphasis: {handleStyle: {borderColor: css("--muted")}, moveHandleStyle: {color: css("--muted")}},
+  dataBackground: {lineStyle: {color: css("--axis")}, areaStyle: {color: css("--grid")}},
+  selectedDataBackground: {lineStyle: {color: css("--muted")}, areaStyle: {color: css("--axis"), opacity: .35}},
+});
 const INSTANCES = {};                                           // chart div id -> ECharts instance
+
+function tip(extra) {                                           // a tooltip in the page colours, never ECharts' default white box
+  const label = {backgroundColor: css("--surface"), borderColor: css("--grid"), borderWidth: 1,   // axis-pointer label (the date/value tag on an axis)
+                 color: css("--ink"), shadowBlur: 8, shadowColor: "rgba(0,0,0,.18)"};
+  return Object.assign({
+    triggerOn: isTouch ? "click" : "mousemove|click", confine: true,  // tap on touch screens; never spill off a phone screen
+    backgroundColor: css("--surface"), borderColor: css("--grid"), borderWidth: 1,  // card colour and hairline border from the tokens
+    textStyle: {color: css("--ink"), fontSize: 13},             // dark ink in light mode, light ink in dark mode
+    extraCssText: "box-shadow:0 6px 20px rgba(0,0,0,.18);border-radius:8px;",  // soft shadow so the box lifts off the chart
+    axisPointer: {label},                                       // the same look for axis-pointer labels
+  }, extra);
+}
 
 function base(narrow) {                                         // options shared by every chart
   return {
     animation: false, backgroundColor: "transparent", textStyle: {color: css("--ink-2")},
-    legend: narrow ? {bottom: 4, left: 12, orient: "vertical", textStyle: {color: css("--ink-2")}}   // below the plot on a phone
+    legend: narrow ? {bottom: 4, left: 12, orient: "vertical", itemGap: 6, textStyle: {color: css("--ink-2")}}  // below the plot on a phone
                    : {top: 6, right: 16, textStyle: {color: css("--ink-2")}},  // top right, clear of the y-axis title
-    tooltip: {trigger: "axis", triggerOn: isTouch ? "click" : "mousemove|click", confine: true},     // tap on touch screens
+    tooltip: tip({trigger: "axis"}),                            // one tooltip for every line at the tapped date
   };
 }
 const ax = extra => Object.assign({axisLine: {lineStyle: {color: css("--axis")}}, splitLine: {lineStyle: {color: css("--grid")}},
                                    axisLabel: {color: css("--muted"), hideOverlap: true}}, extra);
 function zoom(narrow, startYear) {                              // slider under the plot; drag-zoom only with a mouse
   const start = startYear ? DATA.dates.findIndex(d => d >= startYear) / DATA.dates.length * 100 : 0;
-  const z = [{type: "slider", start, end: 100, height: 22, bottom: narrow ? 92 : 8, borderColor: css("--grid"),
+  const z = [{type: "slider", ...sliderStyle(), start, end: 100, height: 22, bottom: narrow ? 92 : 8, borderColor: css("--grid"),
               textStyle: {color: css("--muted")}, labelFormatter: v => new Date(v).getFullYear()}];
   if (!isTouch) z.push({type: "inside", start, end: 100});      // wheel / drag zoom would trap the finger on a phone
   return z;
@@ -270,7 +324,7 @@ const pts = key => DATA.dates.map((d, i) => [d, DATA[key][i]]); // [[date, value
 function spreads(narrow) {                                      // France and Italy premium over Germany since 1999
   const o = base(narrow);
   o.grid = narrow ? {left: 44, right: 16, top: 56, bottom: 130} : {left: 56, right: 28, top: 60, bottom: 54};
-  o.xAxis = ax({type: "time"});
+  o.xAxis = ax({type: "time", splitNumber: narrow ? 4 : 8});   // fewer year labels on a phone
   o.yAxis = ax({type: "value", name: "bp over Germany", nameTextStyle: {color: css("--muted"), align: "left"}});
   o.dataZoom = zoom(narrow, null);
   const line = (name, key, color) => ({name, type: "line", data: pts(key), showSymbol: false, lineStyle: {color, width: 2},
@@ -281,15 +335,15 @@ function spreads(narrow) {                                      // France and It
   o.series.push({name: "Oct 2026, latest daily close", type: "scatter", symbol: "diamond", symbolSize: 12,  // the news numbers
     data: DATA.latest.map(r => ({value: [r.date, r.spread_bp], itemStyle: {color: r.country === "France" ? css("--fr") : css("--it"),
           borderColor: css("--surface"), borderWidth: 2}, name: r.country})),
-    itemStyle: {color: css("--ink-2")}, tooltip: {trigger: "item", formatter: p => p.name + " " + p.value[0] + ": " + p.value[1] + " bp (press report)"}});
+    itemStyle: {color: css("--ink-2")}, tooltip: tip({trigger: "item", formatter: p => p.name + " " + p.value[0] + ": " + p.value[1] + " bp (press report)"})});
   o.tooltip.valueFormatter = v => v == null ? "-" : Math.round(v) + " bp";
   return o;
 }
 
 function gap(narrow) {                                          // Italy minus France: who pays more?
   const o = base(narrow);
-  o.legend = {show: false};                                     // a single series: the title and the note name it
-  o.grid = narrow ? {left: 44, right: 16, top: 16, bottom: 44} : {left: 56, right: 24, top: 20, bottom: 54};
+  o.legend = {show: false};                                     // a single series: the heading and the reading box name it
+  o.grid = narrow ? {left: 44, right: 16, top: 16, bottom: 58} : {left: 56, right: 24, top: 20, bottom: 54};  // room for year labels above the slider
   o.xAxis = ax({type: "time", splitNumber: narrow ? 4 : 8});   // fewer year labels on a phone
   o.yAxis = ax({type: "value"});
   o.dataZoom = zoom(narrow, "2018-01");
@@ -306,19 +360,19 @@ function cds(narrow) {                                          // the CDS snaps
   const o = base(narrow);
   o.legend = {show: false};                                     // the axis labels name the countries
   o.grid = {left: narrow ? 70 : 80, right: narrow ? 92 : 170, top: 10, bottom: 30};
-  o.xAxis = ax({type: "value", name: "", axisLabel: {color: css("--muted"), formatter: "{value} bp"}});
+  o.xAxis = ax({type: "value", name: "", splitNumber: narrow ? 3 : 5, axisLabel: {color: css("--muted"), formatter: "{value} bp", hideOverlap: true}});
   o.yAxis = ax({type: "category", data: DATA.cds.map(r => r.country), axisLabel: {color: css("--ink"), fontSize: 13}, splitLine: {show: false}});
   const color = c => c === "France" ? css("--fr") : c === "Italy" ? css("--it") : css("--de");
   o.series = [{type: "bar", barWidth: "52%", data: DATA.cds.map(r => ({value: r.cds_bp, itemStyle: {color: color(r.country), borderRadius: [0, 4, 4, 0]}})),
     label: {show: true, position: "right", color: css("--ink-2"),
             formatter: p => { const r = DATA.cds[p.dataIndex]; return narrow ? r.cds_bp + " bp" : r.cds_bp + " bp  ~" + r.default_prob.toFixed(2) + "%/yr"; }}}];
-  o.tooltip = {trigger: "item", triggerOn: isTouch ? "click" : "mousemove|click", confine: true,
+  o.tooltip = tip({trigger: "item",                             // one bar at a time, in the page colours
     formatter: p => { const r = DATA.cds[p.dataIndex]; return r.country + ": " + r.cds_bp + " bp (" + r.date + ")<br>implied default risk ~" +
-      r.default_prob.toFixed(2) + "% per year<br>" + r.vs_germany + "x Germany's premium"; }};
+      r.default_prob.toFixed(2) + "% per year<br>" + r.vs_germany + "x Germany's premium"; }});
   return o;
 }
 
-const BUILDERS = {spreads, gap, cds};                   // chart div id -> function that builds its options
+const BUILDERS = {spreads, gap, cds};                           // chart div id -> function that builds its options
 function drawAll() {                                            // (re)build every chart; called on load, rotation and theme change
   const narrow = narrowMQ.matches;
   document.querySelectorAll(".chart").forEach(div => {
@@ -327,6 +381,7 @@ function drawAll() {                                            // (re)build eve
     INSTANCES[div.id].resize();
   });
 }
+if (isTouch) document.querySelectorAll(".hint").forEach(h => h.textContent = "Tap");  // say "tap", not "hover", to touch users
 narrowMQ.addEventListener("change", drawAll);                   // rebuild when a phone is rotated
 window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", drawAll);  // rebuild in the new colours
 window.addEventListener("resize", () => Object.values(INSTANCES).forEach(c => c.resize()));
@@ -350,35 +405,55 @@ COUNTRY_CARDS = {                         # one card per country: its problem, t
         "<b>Market:</b> spread jumped to 131 bp on 5 Oct, then eased to ~107 bp.",
     ],
 }
-SOURCES = [                               # (label, link) for every news fact on the page
-    ("ECB data portal: 10-year yields (IRS)", "https://data.ecb.europa.eu/data/datasets/IRS"),
-    ("Bloomberg, 20 Oct 2026: French spread hits 150 bp",
+SOURCES = [                               # (headline, source and date, link) for the data and every news fact on the page
+    ("10-year yields (IRS)", "ECB data portal", "https://data.ecb.europa.eu/data/datasets/IRS"),
+    ("French spread hits 150 bp", "Bloomberg · 20 Oct 2026",
      "https://www.bloomberg.com/news/articles/2026-10-20/french-bond-risk-gauge-hits-150-basis-points-after-protests"),
-    ("Fortune, 17 Oct 2026: France 'on the brink'",
+    ("France 'on the brink'", "Fortune · 17 Oct 2026",
      "https://fortune.com/2026/10/17/france-debt-crisis-budget-deficit-bond-yields-spread-protests-riots/"),
-    ("Fortune, 2 Oct 2026: French CDS at 81 bp",
+    ("French CDS at 81 bp", "Fortune · 2 Oct 2026",
      "https://fortune.com/2026/10/02/france-debt-crisis-bond-investors-odds-sovereign-default-cds-yield-spread-deficit-presidential-race/"),
-    ("Al Jazeera, 17 Oct 2026: cost-of-living protests",
+    ("Cost-of-living protests", "Al Jazeera · 17 Oct 2026",
      "https://www.aljazeera.com/news/2026/10/17/cost-of-living-protests-hit-belgium-italy-portugal-and-france"),
-    ("Anadolu, 18 Oct 2026: Italy riots",
+    ("Italy riots", "Anadolu · 18 Oct 2026",
      "https://www.anews.com.tr/europe/2026/10/18/28-arrested-141-officers-injured-as-cost-of-living-protests-turn-violent-in-italy"),
-    ("Il Post, 16 Oct 2026: truckers' strike in the South", "https://www.ilpost.it/2026/10/16/proteste-autotrasportatori-sud-italia/"),
-    ("countryeconomy.com: Italy spread", "https://countryeconomy.com/risk-premium/italy"),
-] + [(f"{r['source']}: {r['country']} CDS", r["url"]) for r in CDS_SNAPSHOT]  # plus the three CDS quotes
+    ("Truckers' strike in the South", "Il Post · 16 Oct 2026", "https://www.ilpost.it/2026/10/16/proteste-autotrasportatori-sud-italia/"),
+    ("Italy spread", "countryeconomy.com", "https://countryeconomy.com/risk-premium/italy"),
+] + [(f"{r['country']} CDS",                                   # plus the three CDS quotes
+       f"{r['source']} · {pd.Timestamp(r['date']).strftime('%d %b %Y').lstrip('0')}",  # '2026-07-24' -> '24 Jul 2026', like the press lines
+       r["url"]) for r in CDS_SNAPSHOT]
+
+GLOSSARY = [                              # (term, plain-language meaning): the explanations from the top of this file
+    ("Why Germany?", "Germany is the euro area's \"safe\" borrower. Every other euro country borrows in the same currency, "
+                     "so the gap between its 10-year yield and Germany's is a clean measure of how risky the market thinks it is."),
+    ("Spread", "(10-year yield of the country − 10-year yield of Germany) × 100, in basis points."),
+    ("Basis point (bp)", "0.01 percentage point; a 150 bp spread = 1.50% more per year."),
+    ("Credit default swap (CDS)", "An insurance contract on a government's debt. The buyer pays a yearly premium (quoted in bp of "
+                                  "the amount insured) and gets paid if the country defaults."),
+    ("Recovery rate", f"The share of the money you would get back after a default; {RECOVERY_RATE:.0%} is the market convention."),
+    ("Implied default probability", "Yearly default probability ≈ CDS premium ÷ (1 − recovery rate): the default risk the market is implying."),
+]
+
+
+def short_date(iso):
+    """Turn an ISO date into a short day-month label, e.g. '2026-10-20' -> '20 Oct'."""
+    ts = pd.Timestamp(iso)                                     # text -> Timestamp, so we can read its day and month
+    # returns a str, e.g. short_date("2026-10-20") -> '20 Oct', short_date("2026-07-24") -> '24 Jul'
+    return f"{ts.day} {ts:%b}"
 
 
 def tile(value, label, color=None):
-    """One small stat box; an optional coloured dot names the country."""
+    """One headline number with its label; an optional coloured dot names the country."""
     dot = f'<i class="dot" style="background:var({color})"></i>' if color else ""   # identity is in the text too, never colour alone
-    # returns a str of HTML, e.g. '<div class="tile"><b><i class="dot" ...></i>154 bp</b><span>France over Germany (20 Oct)</span></div>'
-    return f'<div class="tile"><b>{dot}{escape(value)}</b><span>{escape(label)}</span></div>'
+    # returns a str of HTML, e.g. '<div class="kpi"><b><i class="dot" ...></i>154 bp</b><span>France over Germany (20 Oct)</span></div>'
+    return f'<div class="kpi"><b>{dot}{escape(value)}</b><span>{escape(label)}</span></div>'
 
 
 def country_card(country, color):
     """One card: the country's problem, protests and market reaction as a short list."""
     items = "".join(f"<li>{item}</li>" for item in COUNTRY_CARDS[country])   # our own text, already safe HTML
-    # returns a str of HTML, e.g. '<div class="card" style="--c:var(--fr)"><h3>...France</h3><ul><li>...</li> x3</ul></div>'
-    return (f'<div class="card" style="--c:var({color})"><h3><i class="dot" style="background:var({color})"></i>'
+    # returns a str of HTML, e.g. '<div class="story" style="--c:var(--fr)"><h3>...France</h3><ul><li>...</li> x3</ul></div>'
+    return (f'<div class="story" style="--c:var({color})"><h3><i class="dot" style="background:var({color})"></i>'
             f'{country}</h3><ul>{items}</ul></div>')
 
 
@@ -392,6 +467,70 @@ def recent_table(data):
     return f'<div class="scroll"><table>{head}{rows}</table></div>'
 
 
+def answer_text(stats, fr_cds, it_cds):
+    """The short answer at the top of the page, written from the numbers so it stays true after a re-run."""
+    fr_now = LATEST_DAILY[0]["spread_bp"]                      # France's latest daily spread from the press (bp)
+    if stats["flip_last12"] > 0:                               # France paid more than Italy in at least one recent month
+        lead = "<b>Italy used to be the risky one. Now France pays as much or more.</b> "
+    else:                                                      # the old order still holds
+        lead = "<b>Italy still pays more than France.</b> "
+    level = "back at" if fr_now >= stats["fr_peak"] - 10 else "below"   # within 10 bp of the monthly record counts as "back at"
+    dearer = "more" if fr_cds["cds_bp"] > it_cds["cds_bp"] else "less"   # is French default insurance dearer than Italian?
+    body = (f"Its premium over Germany is {level} the {stats['fr_peak_date'][-4:]} euro-crisis record (~{fr_now} bp), "
+            f"and insuring French debt costs {dearer} than insuring Italian debt.")
+    # returns a str of HTML, about 230 characters, e.g.
+    # '<b>Italy used to be the risky one. Now France pays as much or more.</b> Its premium over Germany is back at the
+    #  2011 euro-crisis record (~154 bp), and insuring French debt costs more than insuring Italian debt.'
+    return lead + body
+
+
+def conclusions(stats, cds):
+    """The 'What did we learn?' list, assembled from the findings already on the page."""
+    fr_cds = cds.set_index("country").loc["France"]            # France's row of the CDS table
+    it_cds = cds.set_index("country").loc["Italy"]             # Italy's row
+    fr_now, it_now = LATEST_DAILY[0], LATEST_DAILY[1]          # the latest daily press figures
+    items = [
+        (f"<b>France now pays as much as Italy, or more.</b> France paid more than Italy in {stats['flip_last12']} of the "
+         f"last 12 months ({', '.join(stats['flip_months'])})."),
+        (f"<b>France is back at its euro-crisis level:</b> {fr_now['spread_bp']} bp on {short_date(fr_now['date'])}, against a "
+         f"monthly record of {stats['fr_peak']:.0f} bp in {stats['fr_peak_date']}. Italy, at {it_now['spread_bp']} bp, is far from "
+         f"its own record of {stats['it_peak']:.0f} bp ({stats['it_peak_date']})."),
+        (f"<b>Default insurance tells the same story.</b> France's 5-year CDS is {fr_cds['cds_bp']:.1f} bp (~{fr_cds['default_prob']:.2f}% "
+         f"default risk per year), Italy's {it_cds['cds_bp']:.1f} bp (~{it_cds['default_prob']:.2f}%): {fr_cds['vs_germany']}x and "
+         f"{it_cds['vs_germany']}x Germany's premium."),
+        ("<b>The reasons differ.</b> France: a large deficit and a minority government that must pass the 2027 budget. "
+         "Italy: even more debt, but a stable government and a falling deficit."),
+        ("<b>Limits.</b> The ECB yields are monthly averages, so the October daily closes come from the press. The CDS quotes are "
+         f"from different days (Germany's from July) because there is no free CDS feed, and the {RECOVERY_RATE:.0%} recovery rate "
+         "is a convention, so the implied default risks are rough."),
+    ]
+    # returns a list of 5 HTML strings, e.g.
+    # ['<b>France now pays as much as Italy, or more.</b> France paid more than Italy in 5 of the last 12 months (Dec 2025, ...).',
+    #  '<b>France is back at its euro-crisis level:</b> 154 bp on 20 Oct, against a monthly record of 154 bp in Nov 2011. ...', ...]
+    return items
+
+
+def panel(number, question, finding, how, body, so=""):
+    """One numbered section: a question, its one-line finding, how to read it, the chart or table, and what it tells us."""
+    how_html = f'<p class="how"><b>How to read it.</b> {how}</p>' if how else ""          # optional reading guide
+    so_html = f'<div class="so">{so}</div>' if so else ""                                  # optional takeaway
+    # returns a str of HTML, e.g. '<section class="panel"><p class="tag">01</p><h2>How much more do France and Italy pay ...</h2><p class="dek">...'
+    return (f'<section class="panel"><p class="tag">{number:02d}</p><h2>{escape(question)}</h2>'
+            f'<p class="dek">{finding}</p>{how_html}{body}{so_html}</section>')
+
+
+def references():
+    """The quiet 'References' list after the last panel: one tappable line per source (who, when, what)."""
+    lines = "".join(                                           # one <li> per source in SOURCES
+        f'<li><a href="{escape(u)}" target="_blank" rel="noopener">{escape(w)} — {escape(h)}</a></li>'  # "who · when — what"
+        for h, w, u in SOURCES)                                # h = headline, w = source and date, u = link
+    # returns a str of HTML, one <li> per source (11 lines), e.g.
+    # '<section class="refs" aria-label="References"><h3>References</h3><ul>
+    #  <li><a href="https://data.ecb.europa.eu/data/datasets/IRS" ...>ECB data portal — 10-year yields (IRS)</a></li>
+    #  <li><a href="https://www.bloomberg.com/news/..." ...>Bloomberg · 20 Oct 2026 — French spread hits 150 bp</a></li> ...</ul></section>'
+    return f'<section class="refs" aria-label="References"><h3>References</h3><ul>{lines}</ul></section>'
+
+
 def build_page(data, stats, cds):
     """Assemble the standalone HTML page and write it to disk."""
     payload = {                                                # everything the page's JavaScript needs
@@ -402,55 +541,91 @@ def build_page(data, stats, cds):
         "cds": cds.drop(columns="url").to_dict(orient="records"),  # the CDS bars
     }
     s = stats                                                  # short name
-    fr_cds = cds.set_index("country").loc["France"]            # France's row of the CDS table
-    it_cds = cds.set_index("country").loc["Italy"]             # Italy's row
-    tiles = "".join([                                          # the four headline numbers
-        tile(f"{LATEST_DAILY[0]['spread_bp']} bp", "France over Germany (20 Oct)", "--fr"),
-        tile(f"{LATEST_DAILY[1]['spread_bp']} bp", "Italy over Germany (16 Oct)", "--it"),
+    by_country = cds.set_index("country")                      # CDS table indexed by country name
+    fr_cds, it_cds, de_cds = by_country.loc["France"], by_country.loc["Italy"], by_country.loc["Germany"]  # one row each
+    fr_now, it_now = LATEST_DAILY[0], LATEST_DAILY[1]          # the latest daily press figures
+    latest_quote = short_date(max(r["date"] for r in LATEST_DAILY + CDS_SNAPSHOT))  # newest press date on the page, e.g. '20 Oct'
+    kpis = "".join([                                           # the four headline numbers under the header
+        tile(f"{fr_now['spread_bp']} bp", f"France over Germany ({short_date(fr_now['date'])})", "--fr"),
+        tile(f"{it_now['spread_bp']} bp", f"Italy over Germany ({short_date(it_now['date'])})", "--it"),
         tile(f"{fr_cds['cds_bp']:.1f} bp", f"France 5y CDS: ~{fr_cds['default_prob']:.1f}% default risk/yr", "--fr"),
         tile(f"{it_cds['cds_bp']:.1f} bp", f"Italy 5y CDS: ~{it_cds['default_prob']:.1f}% default risk/yr", "--it"),
     ])
     events = " · ".join(f"<b>{label}</b> {escape(text)}" for _, label, text in EVENTS)   # one compact line of event keys
-    sources = "".join(f'<li><a href="{escape(url)}">{escape(label)}</a></li>' for label, url in SOURCES)  # links, folded away
+    gloss = '<dl class="gloss">' + "".join(f"<div><dt>{escape(t)}</dt><dd>{escape(d)}</dd></div>" for t, d in GLOSSARY) + "</dl>"
+    cards = f'<div class="stories">{country_card("France", "--fr")}{country_card("Italy", "--it")}</div>'   # the two country cards
+    take = '<ol class="take">' + "".join(f"<li>{x}</li>" for x in conclusions(stats, cds)) + "</ol>"   # numbered takeaways
+    hint = '<span class="hint">Hover over or click</span>'     # turned into "Tap" on touch screens by the JavaScript
+
+    panels = "".join([
+        panel(1, "How much more do France and Italy pay than Germany?",
+              f"France {s['fr_de']:.0f} bp and Italy {s['it_de']:.0f} bp in {s['last_month']} (monthly average); "
+              f"{fr_now['spread_bp']} and {it_now['spread_bp']} bp at the latest daily close.",
+              "Each line is the country's 10-year yield minus Germany's: monthly ECB averages since the euro began in 1999. "
+              "Diamonds = latest daily close. 100 bp = 1 percentage point. The numbered dashed lines are the events listed under "
+              f"the chart. {hint} the chart to read a month; drag the slider to zoom.",
+              '<div class="chart" id="spreads" role="img" aria-label="France and Italy 10-year spreads over Germany since 1999"></div>'
+              f'<p class="note">{events}</p>',
+              f"<p>Records since 1999: France {s['fr_peak']:.0f} bp ({s['fr_peak_date']}), Italy {s['it_peak']:.0f} bp "
+              f"({s['it_peak_date']}). France's latest daily close ({fr_now['spread_bp']} bp) is at that level again; "
+              f"Italy ({it_now['spread_bp']} bp) is far below its own.</p>"
+              if fr_now["spread_bp"] >= s["fr_peak"] - 10 else    # only claim "at that level again" when it is true
+              f"<p>Records since 1999: France {s['fr_peak']:.0f} bp ({s['fr_peak_date']}), Italy {s['it_peak']:.0f} bp "
+              f"({s['it_peak_date']}).</p>"),
+        panel(2, "How do you measure the price of risk?", "Two prices: the spread over Germany and the CDS premium.",
+              "", gloss),
+        panel(3, "Who pays more, France or Italy?",
+              f"France paid more than Italy in {s['flip_last12']} of the last 12 months.",
+              "Italy's yield minus France's. <b>Blue bars below zero = France pays more</b>; green bars above zero = Italy pays more. "
+              f"The chart opens on 2018; drag the slider back to 1999. {hint} a bar to read the month.",
+              '<div class="chart short" id="gap" role="img" aria-label="Italy\'s yield minus France\'s yield"></div>'
+              '<p class="label">Last 6 months (bp)</p>' + recent_table(data),
+              f"<p>Since 1999 France paid more than Italy in only {len(s['flip_months'])} months: {', '.join(s['flip_months'])}.</p>"),
+        panel(4, "How much does it cost to insure against a default?",
+              f"France {fr_cds['cds_bp']:.1f} bp, Italy {it_cds['cds_bp']:.1f} bp, Germany {de_cds['cds_bp']:.1f} bp a year.",
+              f"Each bar is a 5-year CDS premium. Default risk per year ≈ CDS ÷ (1 − {RECOVERY_RATE:.0%} recovery). "
+              f"France: {fr_cds['cds_bp']} bp → ~{fr_cds['default_prob']:.2f}%. {hint} a bar for its date.",
+              '<div class="chart short" id="cds" role="img" aria-label="5-year CDS premiums for Germany, Italy and France"></div>'
+              '<p class="note">Latest press quotes from different days (there is no free CDS feed). Germany\'s is from July.</p>',
+              f"<p>Insuring French debt costs {fr_cds['vs_germany']}x Germany's premium, Italian debt {it_cds['vs_germany']}x.</p>"),
+        panel(5, "Why now, and what happened in October?",
+              "France has a budget and government problem; Italy has more debt but a stable government.",
+              "", cards),
+        panel(6, "What did we learn?", "Five takeaways.", "", take),
+    ])                                                         # the sources are no panel: a quiet References list follows (CLAUDE.md)
+
     html = f"""<!doctype html>
-<html lang="en"><head><meta charset="utf-8">
+<html lang="en">
+<head>
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>France &amp; Italy Risk Premium</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="{FONTS_URL}" rel="stylesheet">
 <style>{CSS}</style>
 <script src="{ECHARTS_URL}"></script>
-</head><body><main>
+</head>
+<body>
+<header class="band"><div class="in">
 <a class="back" href="../index.html">&larr; Macro Quant Lab</a>
-<h1>France vs Italy: the price of risk</h1>
-<div class="read"><b>The point:</b> Italy used to be the risky one. Now France pays as much or more. Its premium over
-Germany is back at the 2011 euro-crisis record (~{LATEST_DAILY[0]['spread_bp']} bp), and insuring French debt costs
-more than insuring Italian debt.</div>
-<div class="tiles">{tiles}</div>
-
-<h2>Premium over Germany, 10-year bonds</h2>
-<div class="chart" id="spreads" role="img" aria-label="France and Italy 10-year spreads over Germany since 1999"></div>
-<p class="note">{events} Monthly ECB averages; diamonds = latest daily close. 100 bp = 1 percentage point.</p>
-
-<h2>Who pays more?</h2>
-<p>Italy's yield minus France's. <b>Blue bars below zero = France pays more</b>: {s['flip_last12']} of the last 12 months.</p>
-<div class="chart short" id="gap" role="img" aria-label="Italy's yield minus France's yield"></div>
-
-<h2>CDS: the price of default insurance</h2>
-<p>Default risk per year ≈ CDS ÷ (1 − 40% recovery). France: {fr_cds['cds_bp']} bp → ~{fr_cds['default_prob']:.2f}%.</p>
-<div class="chart short" id="cds" role="img" aria-label="5-year CDS premiums for Germany, Italy and France"></div>
-<p class="note">Latest press quotes from different days (there is no free CDS feed). Germany's is from July.</p>
-
-<h2>Why, and the October protests</h2>
-<div class="cols">{country_card("France", "--fr")}{country_card("Italy", "--it")}</div>
-
-<h2>Last 6 months (bp)</h2>
-{recent_table(data)}
-
-<details><summary>Sources</summary><ul class="note sources">{sources}</ul></details>
-<footer>Built by <code>Yield_Curve/sovereign_spreads.py</code>. A learning project, not investment advice.</footer>
+<p class="eyebrow">France vs Italy: the price of risk</p>
+<h1>What do France and Italy pay over Germany to borrow?</h1>
+<p class="answer">{answer_text(stats, fr_cds, it_cds)}</p>
+<p class="meta">ECB monthly data to {s['last_month']} · press quotes to {latest_quote} · Not investment advice</p>
+</div></header>
+<main class="in">
+<div class="kpis top">{kpis}</div>
+{panels}
+{references()}
+</main>
+<footer><div class="in">Built by <code>Yield_Curve/sovereign_spreads.py</code> from ECB 10-year yields and press reports.
+A learning project, not investment advice.</div></footer>
 <script>{JS.replace('__DATA__', json.dumps(payload))}</script>
-</main></body></html>"""
+</body>
+</html>
+"""
     OUTPUT_PATH.write_text(html, encoding="utf-8")             # write the page
-    # returns nothing; writes Yield_Curve/sovereign_spreads.html (~30 KB; ECharts is loaded from the jsDelivr CDN)
+    # returns nothing; writes Yield_Curve/sovereign_spreads.html (~35 KB; ECharts is loaded from the jsDelivr CDN)
     return None
 
 

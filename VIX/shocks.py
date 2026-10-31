@@ -13,7 +13,8 @@ and score the VIX in each phase as (VIX - realized volatility over the next 21
 trading days). A positive gap means the VIX overpriced volatility; a negative
 gap means the market underestimated what was coming.
 
-Output: VIX/output/shocks.html (one tab per shock + a dashboard tab), drawn with Apache ECharts.
+Output: VIX/output/shocks.html, a "Lab" page (see CLAUDE.md): the four shocks compared side by side,
+        then one tab per shock, drawn with Apache ECharts (loaded from a CDN).
 Reuses the data helpers from volatility.py so both scripts measure the same way.
 
 Layout of this file (see CLAUDE.md):
@@ -44,8 +45,6 @@ from volatility import (                  # reuse the data helpers so both scrip
 # ===========================================================================
 
 OUTPUT_PATH = Path(__file__).parent / "output" / "shocks.html"  # where the web page is saved
-# Apache ECharts, reused from the Rates_and_Phillips/ folder; embedded in the page so it stays one standalone file.
-ECHARTS_PATH = Path(__file__).parent.parent / "Rates_and_Phillips" / "lib" / "echarts.js"  # the chart library file (one folder up, in Rates_and_Phillips/lib/)
 
 PRE_DAYS = 40                             # trading days shown before day 0 (~2 months of "before")
 POST_DAYS = 60                            # trading days shown after day 0 (~3 months of "after")
@@ -61,35 +60,30 @@ EVENTS = [                                # one dictionary per shock
                "that spring. The bubble deflated slowly: this is the "
                "sharpest day inside a ~2.5-year decline that only bottomed "
                "in Oct 2002 (see the day 0 to lowest point tile).",
-        "color": "#2a78d6",               # blue   - categorical slot 1
+        "color": "--dotcom",              # CSS colour token (blue), defined for light and dark mode in the CSS below
     },
     {
         "key": "gfc", "name": "2008 financial crisis", "day0": "2008-09-15",
         "why": "Lehman Brothers files for bankruptcy. Worse S&P days came "
                "later (Oct 2008), but this is the trigger, so the 40 days "
                "before it are still relatively calm.",
-        "color": "#eb6834",               # orange - slot 2
+        "color": "--gfc",                 # red token
     },
     {
         "key": "covid", "name": "Covid crash", "day0": "2020-02-24",
         "why": "First big panic day after the outbreak in Italy: the biggest "
                "one-day VIX jump of the episode. The worst S&P day (16 Mar) "
                "came three weeks later.",
-        "color": "#1baf7a",               # aqua   - slot 3
+        "color": "--covid",               # green token
     },
     {
         "key": "tariffs", "name": "2025 tariff shock", "day0": "2025-04-03",
         "why": "First trading day after the 'Liberation Day' tariff "
                "announcement (made after the close on 2 Apr). The S&P fell "
                "~5% and the VIX jumped ~40%.",
-        "color": "#eda100",               # yellow - slot 4
+        "color": "--tariffs",             # amber token
     },
 ]
-
-# Chart ink colours (light theme), from the reference palette.
-INK, INK_2, MUTED = "#0b0b0b", "#52514e", "#898781"  # main text, secondary text, muted/labels
-GRID, AXIS = "#e1e0d9", "#c3c2b7"         # faint grid lines, axis lines
-OVER_COLOR, UNDER_COLOR = "#2a78d6", "#e34948"  # diverging pair for the gap bars: blue = VIX too high, red = too low
 
 PHASES = ["Pre-shock", "Day 0", "Aftermath"]  # the three phases, in order
 
@@ -287,26 +281,36 @@ def main():
         event["low"] = shock_low(data, event["day0"])        # ...measure the fall to the bottom (needs the full history)
     windows = [(event, slice_event(data, event["day0"])) for event in EVENTS]  # step 3: cut the 101-day window of each shock; a list of (event, table) pairs
     print_summary(windows)                                   # step 4: show the numbers in the terminal
-    OUTPUT_PATH.write_text(build_page(windows), encoding="utf-8")  # step 5: build the web page (html / chart code below) and save it
-    print(f"\nDashboard saved to {OUTPUT_PATH}")             # tell the user where the page is
+    OUTPUT_PATH.write_text(build_page(windows, data), encoding="utf-8")  # step 5: build the web page (html / chart code below) and save it
+    print(f"\nPage saved to {OUTPUT_PATH}")             # tell the user where the page is
 
     # RETURNS None (nothing). The results are its side effects:
     #   - the text summary printed in the terminal (see print_summary)
-    #   - the file VIX/output/shocks.html (about 1 MB), and this last line in the terminal:
-    #     Dashboard saved to VIX/output/shocks.html (full path of your own machine)
+    #   - the file VIX/output/shocks.html (about 70 KB), and this last line in the terminal:
+    #     Page saved to VIX/output/shocks.html (full path of your own machine)
 
 
 # ===========================================================================
 # html / chart code
 # ===========================================================================
-# Python only prepares the numbers (as JSON); the charts themselves are built
+# Python only prepares the numbers (as JSON) and the text; the charts themselves are built
 # in the browser by ECHARTS_JS below, one chart per <div class="chart">.
+# Look: the "Lab" design every project page uses (see CLAUDE.md and nasdaq-bonds/nasdaq_bonds.py):
+# burgundy header band (the VIX colour), rose accents, white panels, the homepage fonts, light and dark mode via colour tokens.
+# Each shock keeps one fixed hue (dot-com = blue, 2008 = red, Covid = green, 2025 tariffs = amber), and the
+# text always names the shock in words too, never by colour alone.
+
+ECHARTS_URL = "https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"  # Apache ECharts, a fixed version
+FONTS_URL = "https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;700&display=swap"  # the homepage fonts
+
 
 def chart_data(windows):
     """Everything the browser needs to draw the charts, as plain lists."""
     def clean(series):
         # NaN is not valid JSON, so use None (-> null). Round to keep the file small.
-        return [None if pd.isna(v) else round(float(v), 2) for v in series]
+        values = [None if pd.isna(v) else round(float(v), 2) for v in series]  # one float (or None) per day
+        # returns a list of floats/None, e.g. clean(window["vix"]) -> [12.67, 12.65, 13.43, ...] (101 items)
+        return values
 
     events = []                                              # will hold one dictionary of lists per shock
     for event, window in windows:
@@ -314,19 +318,19 @@ def chart_data(windows):
         # levels (1,400 in 2000 vs 5,000+ in 2025) become comparable.
         base = window.loc[window["event_day"] == -1, "sp500"].iloc[0]  # the S&P close on day -1 (this becomes 100)
         events.append({
-            "key": event["key"], "name": event["name"], "color": event["color"],  # identity and colour of the shock
+            "key": event["key"], "name": event["name"], "color": event["color"],  # identity and colour token of the shock
             "dates": [f"{d:%Y-%m-%d}" for d in window.index],  # x-axis labels for the shock tab
             "day0": f"{window.index[window['event_day'] == 0][0]:%Y-%m-%d}",  # the shock date, to draw the vertical line
-            "event_day": [int(v) for v in window["event_day"]],  # -40 ... 60, the x-axis of the dashboard
+            "event_day": [int(v) for v in window["event_day"]],  # -40 ... 60, the x-axis of the comparison charts
             "vix": clean(window["vix"]),                     # VIX values
             "realized": clean(window["realized"]),           # realized volatility values
             "gap": clean(window["gap"]),                     # gap values
             "sp_index": clean(window["sp500"] / base * 100),  # S&P indexed to 100 on day -1
         })
 
-    # RETURNS a dict with 4 keys, made only of strings, ints, floats, None and lists (so json.dumps can turn it
+    # RETURNS a dict with 3 keys, made only of strings, ints, floats, None and lists (so json.dumps can turn it
     # into text for the browser). Each list inside an event has 101 items. For the Covid window (first 3 items shown):
-    # {"events": [{"key": "covid", "name": "Covid crash", "color": "#1baf7a",
+    # {"events": [{"key": "covid", "name": "Covid crash", "color": "--covid",   # colour = a CSS token, read by the browser
     #              "dates":     ["2019-12-24", "2019-12-26", "2019-12-27", ...],
     #              "day0":      "2020-02-24",
     #              "event_day": [-40, -39, -38, ...],
@@ -335,32 +339,34 @@ def chart_data(windows):
     #              "gap":       [2.86, 2.4, 3.17, ...],
     #              "sp_index":  [96.57, 97.07, 97.07, ...]},     # S&P with day -1 = 100
     #             ... one such dict per shock (4 in the real page) ...],
-    #  "horizon": 21, "pre_days": 40,
-    #  "colors": {"ink": "#0b0b0b", "ink2": "#52514e", "muted": "#898781", "grid": "#e1e0d9",
-    #             "axis": "#c3c2b7", "over": "#2a78d6", "under": "#e34948"}}
-    return {
-        "events": events, "horizon": FORWARD_HORIZON, "pre_days": PRE_DAYS,
-        "colors": {"ink": INK, "ink2": INK_2, "muted": MUTED, "grid": GRID,
-                   "axis": AXIS, "over": OVER_COLOR, "under": UNDER_COLOR},
-    }
+    #  "horizon": 21, "pre_days": 40}
+    return {"events": events, "horizon": FORWARD_HORIZON, "pre_days": PRE_DAYS}
 
 
-def chart_div(chart_id, height):
-    """Empty box; ECHARTS_JS draws the chart into it the first time its tab is shown."""
-    box = f'<div class="chart" id="{chart_id}" data-h="{height}" style="height:{height}px"></div>'  # an empty <div>: an id, the desktop height (data-h) and a starting height
+def chart_div(chart_id, height, label):
+    """Empty box; ECHARTS_JS draws the chart into it (shock charts: the first time their tab is shown)."""
+    box = (f'<div class="chart" id="{chart_id}" data-h="{height}" style="height:{height}px" '  # an id, the desktop height (data-h) and a starting height
+           f'role="img" aria-label="{escape(label)}"></div>')  # a text description for screen readers
 
-    # RETURNS a str of HTML. chart_div("chart-covid", 480) gives:
-    # '<div class="chart" id="chart-covid" data-h="480" style="height:480px"></div>'
+    # RETURNS a str of HTML. chart_div("chart-covid", 480, "Covid crash: VIX against realized volatility") gives:
+    # '<div class="chart" id="chart-covid" data-h="480" style="height:480px" role="img" aria-label="Covid crash: ..."></div>'
     # (data-h = the desktop height; the JavaScript makes some boxes taller on a phone)
     return box
 
 
-# ---- the CSS and JavaScript that live inside the page (unchanged text) ----
+# ---- the CSS and JavaScript that live inside the page ----
 
 ECHARTS_JS = """
-const DATA = __DATA__;
-const K = DATA.colors;                     // shared ink / grid / diverging colours
-const FONT = "system-ui, -apple-system, 'Segoe UI', sans-serif";
+const DATA = __DATA__;                                          // everything Python computed, as JSON
+const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();  // read a colour token
+let K = {};                                                     // the current colours (light or dark), read from the CSS tokens
+function readColors() {                                         // (re)read every colour, e.g. after a light/dark switch
+  K = { ink: css("--ink"), ink2: css("--ink-2"), muted: css("--muted"), grid: css("--grid"), axis: css("--axis"),
+        over: css("--over"), under: css("--under"), surface: css("--surface") };
+  DATA.events.forEach(e => e.c = css(e.color));                 // each shock's line colour, e.g. "--covid" -> "#1f7a55"
+}
+readColors();
+const FONT = "'DM Sans', system-ui, -apple-system, 'Segoe UI', sans-serif";
 const fmt1 = v => (v === null || v === undefined) ? "-" : Number(v).toFixed(1);
 
 // ---- phone layout ----
@@ -369,22 +375,35 @@ const narrowMQ = window.matchMedia("(max-width: 640px)");
 const isNarrow = () => narrowMQ.matches;
 const isTouch = window.matchMedia("(pointer: coarse)").matches;   // a finger instead of a mouse
 // Chart box heights (px) on a phone; on desktop each box keeps the height in its data-h attribute.
-const NARROW_H = { "chart-levels": 650, "chart-gap": 390, "chart-sp": 390 };
+const NARROW_H = { "chart-levels": 640, "chart-gap": 420, "chart-sp": 420 };
 function fitHeight(div) { div.style.height = ((isNarrow() && NARROW_H[div.id]) || div.dataset.h) + "px"; }
 
 // Axis look shared by every chart: recessive grid, light axis line.
-const axisStyle = {
+const axisStyle = () => ({
   axisLine: { lineStyle: { color: K.axis } }, axisTick: { lineStyle: { color: K.axis } },
   axisLabel: { color: K.ink2 }, splitLine: { lineStyle: { color: K.grid } }
-};
-// Options shared by every chart.
+});
+// Tooltip look: the page's own surface, border and ink colours (never ECharts' default white box, which glares in
+// dark mode), plus a soft shadow so the box lifts off the chart. Read from K, so a theme switch + redraw updates it.
+const tipBox = () => ({ backgroundColor: K.surface, borderColor: K.grid, borderWidth: 1,
+  extraCssText: "box-shadow: 0 6px 18px rgba(0,0,0,.18); border-radius: 8px;" });
+// Axis-pointer labels (the small value boxes on an axis) get the same colours as the tooltip.
+const pointerLabel = () => ({ backgroundColor: K.surface, borderColor: K.grid, borderWidth: 1, color: K.ink,
+  shadowBlur: 8, shadowColor: "rgba(0,0,0,.18)" });
+// Options shared by every chart. Tooltips open on a tap on touch screens.
 const base = () => ({
   animation: false, backgroundColor: "transparent", textStyle: { fontFamily: FONT, color: K.ink2 },
-  tooltip: { trigger: "axis", valueFormatter: fmt1, confine: true, textStyle: { fontSize: isNarrow() ? 12 : 14 } },
-  axisPointer: { link: [{ xAxisIndex: "all" }] }
+  tooltip: { trigger: "axis", triggerOn: isTouch ? "click" : "mousemove|click", valueFormatter: fmt1, confine: true,
+             ...tipBox(), textStyle: { color: K.ink, fontSize: isNarrow() ? 12 : 14 },
+             axisPointer: { label: pointerLabel() } },          // the pointer's own value label, if one is shown
+  axisPointer: { link: [{ xAxisIndex: "all" }], label: pointerLabel() }
 });
 const yAxis = (name, extra = {}) => ({ type: "value", name, nameLocation: "middle", nameGap: isNarrow() ? 34 : 42,
-  nameTextStyle: { color: K.ink2 }, scale: true, ...axisStyle, ...extra });
+  nameTextStyle: { color: K.ink2 }, scale: true, ...axisStyle(), ...extra });
+// Phone: legend one entry per line, BELOW the plot. Desktop: one row above the plot.
+const legendFor = (narrow, data) => narrow
+  ? { bottom: 0, left: 0, orient: "vertical", itemGap: 6, data, textStyle: { color: K.ink2 } }
+  : { top: 0, left: 0, data, textStyle: { color: K.ink2 } };
 
 // Legend icons drawn by hand so "solid" and "dashed" are obvious (34 x 4 px, same as itemWidth x itemHeight).
 const SOLID_ICON = "path://M0,0 L34,0 L34,4 L0,4 Z";                 // one long bar = solid line
@@ -402,44 +421,48 @@ function shockOption(e) {
                      label: { show: false }, data: [{ xAxis: e.day0 }] };
   // shaded band (pre-shock) or invisible band (aftermath) that only carries a text label
   const phaseArea = (name, from, to, shade) => [
-    { name, xAxis: from, itemStyle: { color: shade ? K.muted : "transparent", opacity: shade ? 0.1 : 1 },
+    { name, xAxis: from, itemStyle: { color: shade ? K.muted : "transparent", opacity: shade ? 0.12 : 1 },
       label: { position: "insideTop", color: K.ink2 } },
     { xAxis: to }];
   const last = e.dates.length - 1;
+  const ax = axisStyle();
   return { ...base(),
     legend: { top: 0, left: 0, orient: narrow ? "vertical" : "horizontal", itemWidth: narrow ? 28 : 34, itemHeight: 4,
       itemGap: narrow ? 6 : 28, textStyle: { color: K.ink2, fontSize: 12 },
       data: [{ name: "VIX - expected (solid line)", icon: SOLID_ICON },
              { name: "Realized, next " + DATA.horizon + "d - actual (dashed line)", icon: DASHED_ICON },
-             { name: "Gap (VIX - realized)", icon: "rect" }] },
+             { name: "Gap (VIX - realized)", icon: "rect", itemStyle: { color: K.muted } }] },
     grid: [{ left: L, right: R, top: topMain, height: hMain }, { left: L, right: R, top: topGap, height: hGap }],
-    xAxis: [{ type: "category", gridIndex: 0, data: e.dates, axisLabel: { show: false }, axisLine: axisStyle.axisLine, axisTick: { show: false } },
+    xAxis: [{ type: "category", gridIndex: 0, data: e.dates, axisLabel: { show: false }, axisLine: ax.axisLine, axisTick: { show: false } },
             // alignMin/MaxLabel keep the first and last date from being cut off at the edges of the screen
-            { type: "category", gridIndex: 1, data: e.dates, ...axisStyle, splitLine: { show: false },
-              axisLabel: { color: K.ink2, hideOverlap: true, alignMinLabel: "left", alignMaxLabel: "right" } }],
+            { type: "category", gridIndex: 1, data: e.dates, ...ax, splitLine: { show: false },
+              axisLabel: { color: K.ink2, hideOverlap: true, alignMinLabel: "left", alignMaxLabel: "right",
+                           ...(narrow ? { interval: Math.floor((e.dates.length - 1) / 2) - 1 } : {}) } }],  // phone: first, middle and last date only
     yAxis: [yAxis("Annualized vol (%)", { gridIndex: 0 }), yAxis("VIX - realized (pts)", { gridIndex: 1, scale: false })],
     // On a touch screen a finger drag over the chart would zoom it instead of scrolling the page, so zoom is mouse-only.
     dataZoom: isTouch ? [] : [{ type: "inside", xAxisIndex: [0, 1] }],
     series: [
       { name: "VIX - expected (solid line)", type: "line", xAxisIndex: 0, yAxisIndex: 0, data: e.vix, showSymbol: false,
-        lineStyle: { color: e.color, width: 2 }, itemStyle: { color: e.color }, markLine: day0Line,
+        lineStyle: { color: e.c, width: 2 }, itemStyle: { color: e.c }, markLine: day0Line,
         markArea: { silent: true, data: [phaseArea("Pre-shock", e.dates[0], e.day0, true), phaseArea("Aftermath", e.day0, e.dates[last], false)] } },
       { name: "Realized, next " + DATA.horizon + "d - actual (dashed line)", type: "line", xAxisIndex: 0, yAxisIndex: 0, data: e.realized, showSymbol: false,
-        lineStyle: { color: e.color, width: 2, type: "dashed" }, itemStyle: { color: e.color } },
+        lineStyle: { color: e.c, width: 2, type: "dashed" }, itemStyle: { color: e.c } },
       // blue bar = VIX too high (overpriced), red bar = VIX too low (underestimated)
       { name: "Gap (VIX - realized)", type: "bar", xAxisIndex: 1, yAxisIndex: 1, data: e.gap, markLine: day0Line,
         itemStyle: { color: p => p.value >= 0 ? K.over : K.under } }
     ] };
 }
 
-// ---- dashboard: four shocks overlaid on one "days since day 0" axis ----
+// ---- comparison charts: four shocks overlaid on one "days since day 0" axis ----
 const names = DATA.events.map(e => e.name);
 const pairs = (e, field) => e.event_day.map((d, i) => [d, e[field][i]]);   // [x = day, y = value]
-const day0Marker = { silent: true, symbol: "none", lineStyle: { color: K.ink, width: 1.5, type: "dotted" }, label: { show: false }, data: [{ xAxis: 0 }] };
+const day0Marker = () => ({ silent: true, symbol: "none", lineStyle: { color: K.ink, width: 1.5, type: "dotted" }, label: { show: false }, data: [{ xAxis: 0 }] });
 const lineSeries = (e, field, extra = {}) => ({ name: e.name, type: "line", data: pairs(e, field), showSymbol: false,
-  lineStyle: { color: e.color, width: 2 }, itemStyle: { color: e.color }, ...extra });
+  lineStyle: { color: e.c, width: 2 }, itemStyle: { color: e.c }, ...extra });
 const dayAxis = (extra = {}) => ({ type: "value", min: -DATA.pre_days, name: "Trading days since day 0", nameLocation: "middle", nameGap: 28,
-  nameTextStyle: { color: K.ink2 }, ...axisStyle, splitLine: { show: false }, ...extra });
+  nameTextStyle: { color: K.ink2 }, ...axisStyle(), splitLine: { show: false },
+  axisPointer: { label: { ...pointerLabel(), formatter: p => "Day " + Math.round(p.value) } },  // tooltip title "Day 15", not "15.00"
+  ...extra });
 // a reference line on the first series only: dotted vertical at day 0 + a solid horizontal one
 const refLines = (yValue, yColor) => ({ markLine: { silent: true, symbol: "none", label: { show: false }, data: [
   { xAxis: 0, lineStyle: { color: K.ink, width: 1.5, type: "dotted" } }, { yAxis: yValue, lineStyle: { color: yColor, width: 1, type: "solid" } }] } });
@@ -452,35 +475,37 @@ function levelsOption() {
   const top = Math.ceil(Math.max(...all) / 10) * 10;
   const laneY = (gridIndex, name) => yAxis(name, { gridIndex, min: 0, max: top, scale: false });
   return { ...base(),
-    legend: { top: 0, left: 0, data: names, textStyle: { color: K.ink2 } },
+    legend: legendFor(narrow, names),
     // Desktop: VIX and realized side by side. Phone: stacked, one above the other, so each gets the full width.
-    title: narrow ? [panelTitle("VIX (expected)", 48, 52), panelTitle("Realized, next " + DATA.horizon + "d (actual)", 48, 342)]
+    title: narrow ? [panelTitle("VIX (expected)", 48, 0), panelTitle("Realized, next " + DATA.horizon + "d (actual)", 48, 262)]
                   : [panelTitle("VIX (expected)", 56, 34), panelTitle("Realized, next " + DATA.horizon + "d (actual)", "54%", 34)],
-    grid: narrow ? [{ left: 48, right: 18, top: 78, height: 200 }, { left: 48, right: 18, top: 368, height: 200 }]
+    grid: narrow ? [{ left: 48, right: 18, top: 26, height: 200 }, { left: 48, right: 18, top: 288, height: 200 }]
                  : [{ left: 56, width: "40%", top: 70, height: 250 }, { left: "54%", right: 16, top: 70, height: 250 }],
     xAxis: narrow ? [dayAxis({ gridIndex: 0, name: "" }), dayAxis({ gridIndex: 1 })]
                   : [dayAxis({ gridIndex: 0 }), dayAxis({ gridIndex: 1, name: "" })],
     yAxis: [laneY(0, "Annualized vol (%)"), laneY(1, narrow ? "Annualized vol (%)" : "")],
     series: DATA.events.flatMap(e => [
-      lineSeries(e, "vix", { xAxisIndex: 0, yAxisIndex: 0, markLine: day0Marker }),
-      lineSeries(e, "realized", { xAxisIndex: 1, yAxisIndex: 1, markLine: day0Marker })]) };
+      lineSeries(e, "vix", { xAxisIndex: 0, yAxisIndex: 0, markLine: day0Marker() }),
+      lineSeries(e, "realized", { xAxisIndex: 1, yAxisIndex: 1, markLine: day0Marker() })]) };
 }
 function gapOption() {
   const narrow = isNarrow();
   return { ...base(),
-    legend: { top: 0, left: 0, data: names, textStyle: { color: K.ink2 } },
-    // Desktop: the hint sits top-right. Phone: it drops under the (wrapped) legend instead of colliding with it.
-    title: { text: "above 0: VIX overpriced  |  below 0: underestimated", ...(narrow ? { left: 0, top: 46 } : { right: 16, top: 2 }),
+    legend: legendFor(narrow, names),
+    // Desktop: the hint sits top-right. Phone: it sits above the plot (the legend is below).
+    // On a phone the one-line hint was wider than the screen and got cut off, so it is split over two lines there.
+    title: { text: narrow ? "above 0: VIX overpriced\\nbelow 0: underestimated" : "above 0: VIX overpriced  |  below 0: underestimated",
+             ...(narrow ? { left: 0, top: 0 } : { right: 16, top: 2 }),
              textStyle: { color: K.muted, fontSize: 12, fontWeight: "normal" } },
-    grid: { left: narrow ? 48 : 56, right: narrow ? 18 : 16, top: narrow ? 76 : 40, height: narrow ? 240 : 260 },
+    grid: { left: narrow ? 48 : 56, right: narrow ? 18 : 16, top: narrow ? 46 : 40, height: narrow ? 240 : 260 },  // phone: room for the 2-line hint
     xAxis: dayAxis(), yAxis: yAxis("VIX - realized (pts)", { scale: false }),
     series: DATA.events.map((e, i) => lineSeries(e, "gap", i === 0 ? refLines(0, K.ink) : {})) };
 }
 function spOption() {
   const narrow = isNarrow();
   return { ...base(),
-    legend: { top: 0, left: 0, data: names, textStyle: { color: K.ink2 } },
-    grid: { left: narrow ? 48 : 56, right: narrow ? 18 : 16, top: narrow ? 56 : 40, height: narrow ? 260 : 260 },
+    legend: legendFor(narrow, names),
+    grid: { left: narrow ? 48 : 56, right: narrow ? 18 : 16, top: narrow ? 14 : 40, height: 260 },
     xAxis: dayAxis(), yAxis: yAxis("S&P 500 (day -1 = 100)"),
     series: DATA.events.map((e, i) => lineSeries(e, "sp_index", i === 0 ? refLines(100, K.axis) : {})) };
 }
@@ -489,89 +514,131 @@ function spOption() {
 const BUILDERS = { "chart-levels": levelsOption, "chart-gap": gapOption, "chart-sp": spOption };
 DATA.events.forEach(e => BUILDERS["chart-" + e.key] = () => shockOption(e));
 const INSTANCES = {};
+function initChart(div) {                                       // draw a chart the first time, or just refit it
+  fitHeight(div);                                               // taller boxes on a phone
+  if (!INSTANCES[div.id]) {
+    INSTANCES[div.id] = echarts.init(div);
+    INSTANCES[div.id].setOption(BUILDERS[div.id]());
+  } else {
+    INSTANCES[div.id].resize();
+  }
+}
+function redrawAll() {                                          // rebuild every drawn chart (new layout or new colours)
+  Object.entries(INSTANCES).forEach(([id, chart]) => {
+    fitHeight(document.getElementById(id)); chart.resize(); chart.setOption(BUILDERS[id](), true); });
+}
 // Keep charts fitted when the window changes. If the screen crosses the phone/desktop line (e.g. the phone is
 // rotated), resize the box and rebuild the chart with the other layout.
 let wasNarrow = isNarrow();
 addEventListener("resize", () => {
   const changed = isNarrow() !== wasNarrow;
   wasNarrow = isNarrow();
-  Object.entries(INSTANCES).forEach(([id, chart]) => {
-    if (changed) { fitHeight(document.getElementById(id)); chart.resize(); chart.setOption(BUILDERS[id](), true); }
-    else { chart.resize(); }
-  });
+  if (changed) redrawAll(); else Object.values(INSTANCES).forEach(c => c.resize());
 });
+// A switch between light and dark mode: read the new colours and redraw, so lines AND tooltips take the new tokens.
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { readColors(); redrawAll(); });
 """
 
 
 CSS = """
-:root { color-scheme: light; }
-body { margin: 0; padding: 24px 16px 48px; background: #f9f9f7; color: #0b0b0b;
-       font: 14px/1.5 system-ui, -apple-system, 'Segoe UI', sans-serif; }
-main { max-width: 1080px; margin: 0 auto; }
-h1 { font-size: 22px; margin: 0 0 4px; }
-h2 { font-size: 17px; margin: 0 0 4px; }
-p.sub { margin: 0 0 16px; color: #52514e; }
-.tabs { display: flex; flex-wrap: wrap; gap: 4px; border-bottom: 1px solid #c3c2b7; }
-.tabs button { font: inherit; padding: 8px 14px; border: 0; background: none;
-               color: #52514e; cursor: pointer; border-bottom: 3px solid transparent; }
-.tabs button[aria-selected=true] { color: #0b0b0b; font-weight: 600;
-                                   border-bottom-color: var(--tab-color, #0b0b0b); }
-.panel { background: #fcfcfb; border: 1px solid #e1e0d9; border-top: 0;
-         padding: 16px; }
-.panel[hidden] { display: none; }
-.tiles { display: flex; flex-wrap: wrap; gap: 12px; margin: 12px 0; }
-.tile { flex: 1 1 150px; border: 1px solid #e1e0d9; border-radius: 6px; padding: 8px 12px; }
-.tile .v { font-size: 20px; font-weight: 600; }
-.tile .l { color: #52514e; font-size: 12px; }
-.tablewrap { overflow-x: auto; margin-top: 12px; }
-table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
-th, td { padding: 6px 10px; border-bottom: 1px solid #e1e0d9; text-align: right; white-space: nowrap; }
-th:first-child, td:first-child { text-align: left; }
-th { color: #52514e; font-weight: 600; }
-.note { color: #52514e; font-size: 12px; margin-top: 8px; }
-.sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; }
-.swipe-hint { display: none; margin: 8px 0 0; font-size: 12px; color: #6e6960; }
-/* Phones: tighter spacing, 2 tiles per row, wrapping table text, finger-sized tabs */
-@media (max-width: 640px) {
-  body { padding: 16px 10px 40px; }
-  h1 { font-size: 19px; }
-  h2 { font-size: 16px; }
-  .panel { padding: 12px; }
-  .tabs button { padding: 12px 10px; font-size: 14px; }
-  .tiles { gap: 8px; }
-  .tile { flex: 1 1 130px; padding: 8px 10px; }
-  .tile .v { font-size: 18px; }
-  th, td { padding: 6px 8px; white-space: normal; font-size: 13px; }
-  th { font-size: 12px; }
-  /* The 9-column dashboard table cannot fit: keep it scrolling sideways, with the shock name pinned */
-  #dashboard th, #dashboard td { white-space: nowrap; }
-  #dashboard th:first-child, #dashboard td:first-child { position: sticky; left: 0; background: #fcfcfb; }
-  /* Phase table (shock tabs): drop the "Days" column and tighten, so Verdict stays on screen */
-  .panel:not(#dashboard) th, .panel:not(#dashboard) td { padding: 6px 5px; }
-  .panel:not(#dashboard) th:nth-child(2), .panel:not(#dashboard) td:nth-child(2) { display: none; }
-  .swipe-hint { display: block; }
+:root{color-scheme:light dark;--band:#4a1626;--band-ink:#e4e6ea;--brass:#d0506c;--page:#f6f5f2;--surface:#fff;--ink:#16181d;--ink-2:#555a63;
+  --muted:#868b94;--grid:#e4e2dc;--axis:#c9c7c0;--dotcom:#2a5db0;--gfc:#c4452f;--covid:#1f7a55;--tariffs:#c98f17;--over:#2a5db0;--under:#c4452f}
+@media (prefers-color-scheme:dark){:root{--band:#33101b;--brass:#ec8098;--page:#0f1012;--surface:#18191d;--ink:#ececee;--ink-2:#aaadb5;
+  --muted:#80848c;--grid:#2a2c31;--axis:#3f4248;--dotcom:#6d9be0;--gfc:#e8775f;--covid:#3fa37c;--tariffs:#e2b04e;--over:#6d9be0;--under:#e8775f}}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--page);color:var(--ink);font:16px/1.6 "DM Sans",system-ui,-apple-system,"Segoe UI",sans-serif}
+h1,h2,h3,.kpi b{font-family:"DM Serif Display",Georgia,serif;font-weight:400}
+a{color:inherit}
+.in{max-width:1000px;margin:0 auto;padding:0 max(20px,env(safe-area-inset-right)) 0 max(20px,env(safe-area-inset-left))}
+.band{background:var(--band);color:var(--band-ink);padding:8px 0 96px}
+a.back{display:inline-flex;align-items:center;min-height:44px;color:var(--band-ink);text-decoration:none;font-size:14px}
+a.back:hover{color:#fff}
+.eyebrow{margin:24px 0 12px;color:var(--brass);font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase}
+h1{margin:0;color:#fff;font-size:clamp(32px,5.5vw,50px);line-height:1.08;max-width:20ch}
+.answer{margin:18px 0 0;max-width:68ch}
+.answer b{color:#fff}
+.meta{margin:14px 0 0;font-size:13px;opacity:.75}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.kpis.top{margin-top:-64px}
+.kpis.five{grid-template-columns:repeat(5,1fr);margin:0 0 18px}
+.kpi{background:var(--surface);border:1px solid var(--grid);border-radius:12px;padding:16px 18px}
+.top .kpi{box-shadow:0 14px 34px rgba(0,0,0,.10)}
+.kpi b{display:block;font-size:30px;font-variant-numeric:tabular-nums}
+.kpi span{display:block;font-size:13px;line-height:1.45;color:var(--ink-2)}
+.five .kpi{padding:12px 14px}
+.five .kpi b{font-size:24px}
+.panel{background:var(--surface);border:1px solid var(--grid);border-radius:14px;padding:28px;margin-top:20px}
+.panel .tag{margin:0;color:var(--brass);font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
+h2{margin:4px 0 2px;font-size:28px;line-height:1.15}
+.dek{margin:0 0 18px;font-weight:700}
+.how{background:var(--page);border-radius:10px;padding:12px 16px;margin:0 0 18px;font-size:15px;color:var(--ink-2)}
+.how b,.so b{color:var(--ink)}
+.so{border-left:3px solid var(--brass);padding:2px 0 2px 16px;margin:20px 0 0}
+.so p{margin:0 0 8px}
+.panel .kpi{background:var(--page);border:0}
+.chart{width:100%;height:340px}
+.label{margin:18px 0 4px;font-size:13px;font-weight:600;color:var(--ink-2)}
+.note{color:var(--muted);font-size:13px;margin:6px 0 0}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:8px;vertical-align:middle;flex:none}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 18px}
+.tabs button{display:inline-flex;align-items:center;min-height:44px;padding:0 14px;border:1px solid var(--grid);border-radius:999px;
+  background:transparent;color:var(--ink-2);font:inherit;font-size:14px;font-weight:600;cursor:pointer}
+.tabs button[aria-selected=true]{background:var(--ink);color:var(--page);border-color:var(--ink)}
+.tabpanel[hidden]{display:none}
+.tabpanel h3{margin:0 0 4px;font-size:22px;line-height:1.2}
+.why{margin:0 0 16px;color:var(--ink-2);font-size:15px}
+.gloss{display:grid;grid-template-columns:1fr 1fr;gap:14px 28px;margin:0}
+.gloss div{margin:0}
+.gloss dt{font-weight:700}
+.gloss dd{margin:2px 0 0;color:var(--ink-2);font-size:15px}
+.take{margin:0;padding-left:1.2rem}
+.take li{margin:0 0 12px}
+.take li::marker{color:var(--brass)}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:14px}
+th,td{padding:9px 10px;border-bottom:1px solid var(--grid);text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left;position:sticky;left:0;background:var(--surface);padding-left:0}
+th{font-weight:600;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+.sum th{white-space:normal;vertical-align:bottom}   /* 9 columns: wrap the headers so the table fits a desktop screen */
+.swipe-hint{display:none;margin:8px 0 0;font-size:13px;color:var(--muted)}
+.refs{margin:32px 0 0;padding:0 2px;color:var(--muted);font-size:13px;line-height:1.5}   /* quiet: no panel box, small muted text */
+.refs-title{margin:0 0 2px;font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
+.refs ul{list-style:none;margin:0;padding:0}
+.refs a{display:inline-flex;align-items:center;min-height:40px;padding:4px 0;color:var(--ink-2);   /* 40px tall: easy to tap */
+  text-decoration:underline;text-decoration-color:var(--axis);text-underline-offset:3px}
+.refs a:hover{color:var(--ink)}
+@media (max-width:640px){.refs a{display:flex}.refs .sep{display:none}.refs li{margin:0 0 8px}}   /* phone: link on its own 40px line, what it gave just below */
+footer{margin-top:40px;background:var(--band);color:var(--band-ink);font-size:13px}
+footer .in{padding-top:20px;padding-bottom:20px}
+@media (max-width:720px){.kpis,.kpis.five{grid-template-columns:1fr 1fr;gap:10px}.five .kpi:last-child{grid-column:1/-1}
+  .panel{padding:20px 16px}.band{padding-bottom:84px}h2{font-size:24px}}
+@media (max-width:640px){
+  .gloss{grid-template-columns:1fr;gap:18px}
+  th,td{padding:8px 4px;font-size:13px}
+  .phase th,.phase td{white-space:normal;padding:8px 3px;font-size:12.5px}
+  .phase th{text-transform:none;letter-spacing:0}
+  .phase th:first-child,.phase td:first-child{position:static}   /* 5 narrow columns fit, no need to pin the first */
+  .phase th:nth-child(2),.phase td:nth-child(2){display:none}   /* drop the "Days" column so Verdict stays on screen */
+  .sum th{white-space:nowrap}   /* phone: keep the table one line high and let it scroll sideways */
+  .swipe-hint{display:block}
 }
 """
 
 JS = """
 function showTab(id) {
-  document.querySelectorAll('.panel').forEach(p => p.hidden = (p.id !== id));
+  document.querySelectorAll('.tabpanel').forEach(p => p.hidden = (p.id !== id));
   document.querySelectorAll('.tabs button').forEach(b =>
     b.setAttribute('aria-selected', b.dataset.tab === id));
-  // ECharts can't measure a hidden box, so each chart is created the first
-  // time its tab is shown (and just resized on later visits).
-  document.querySelectorAll('#' + id + ' .chart').forEach(div => {
-    fitHeight(div);   // taller boxes on a phone
-    if (!INSTANCES[div.id]) {
-      INSTANCES[div.id] = echarts.init(div);
-      INSTANCES[div.id].setOption(BUILDERS[div.id]());
-    } else {
-      INSTANCES[div.id].resize();
-    }
-  });
+  // ECharts can't measure a hidden box, so each shock chart is created the
+  // first time its tab is shown (and just resized on later visits).
+  document.querySelectorAll('#' + id + ' .chart').forEach(initChart);
 }
 document.querySelectorAll('.tabs button').forEach(b =>
   b.addEventListener('click', () => showTab(b.dataset.tab)));
+// Every chart that is not inside a hidden tab is visible: draw it now.
+document.querySelectorAll('.chart').forEach(div => { if (!div.closest('[hidden]')) initChart(div); });
+if (isTouch) document.querySelectorAll('.hint').forEach(h => h.textContent = 'Tap');   // say "tap", not "hover", to touch users
 """
 
 
@@ -587,12 +654,126 @@ def fmt(value, signed=False, suffix=""):
     return text
 
 
-def tile(value, label):
-    """One small box with a big number and a caption."""
-    html = f'<div class="tile"><div class="v">{value}</div><div class="l">{escape(label)}</div></div>'  # escape() keeps odd characters in the caption from breaking the HTML
+def tile(value, label, color=None):
+    """One headline number with its caption; an optional dot names the shock by its chart colour."""
+    dot = f'<i class="dot" style="background:var({color})"></i>' if color else ""  # identity is in the caption too, never colour alone
+    html = f'<div class="kpi"><b>{dot}{value}</b><span>{escape(label)}</span></div>'  # escape() keeps odd characters in the caption from breaking the HTML
 
     # RETURNS a str of HTML. tile("-3.4%", "S&P 500 on day 0") gives:
-    # '<div class="tile"><div class="v">-3.4%</div><div class="l">S&amp;P 500 on day 0</div></div>'
+    # '<div class="kpi"><b>-3.4%</b><span>S&amp;P 500 on day 0</span></div>'
+    return html
+
+
+def scorecard(windows):
+    """Gather, per shock, the phase averages, the key facts and the fall to the low (used by all the text below)."""
+    card = []                                                # one dict per shock, in the order of EVENTS
+    for event, window in windows:
+        card.append({
+            "name": event["name"],                           # e.g. "Covid crash"
+            "color": event["color"],                         # its colour token, e.g. "--covid"
+            "phases": {r["phase"]: r for r in phase_table(window)},  # look up a phase's averages by its name
+            "facts": key_facts(window),                      # day-0 move, VIX peak, realized peak...
+            "low": event["low"],                             # day 0 -> lowest point (full history)
+        })
+
+    # RETURNS a list of 4 dicts (one per shock). The Covid one prints as (floats rounded):
+    # {"name": "Covid crash", "color": "--covid",
+    #  "phases": {"Pre-shock": {"phase": "Pre-shock", "days": 40, "vix": 14.3, "realized": 31.9, "gap": -17.6},
+    #             "Day 0": {..., "gap": -67.4}, "Aftermath": {..., "gap": -2.1}},
+    #  "facts": {"day0_date": Timestamp("2020-02-24"), "sp_day0_return": -3.35, "vix_day0": 25.03, "vix_peak": 82.69,
+    #            "vix_peak_day": 15, "realized_peak": 97.56},
+    #  "low": {"low_date": Timestamp("2020-03-23"), "fall": -30.6, "days_to_low": 20, "recovery_date": Timestamp("2020-08-18")}}
+    return card
+
+
+def names_with(card, phase, label):
+    """The shocks whose average gap in `phase` got the verdict `label`."""
+    names = [c["name"] for c in card if verdict(c["phases"][phase]["gap"]) == label]  # keep a shock when its verdict matches
+
+    # RETURNS a list of str, e.g. names_with(card, "Aftermath", "VIX overreacted") -> ['Dot-com crash', '2025 tariff shock']
+    return names
+
+
+def join_names(names):
+    """Write a list of names as readable English: 'A', 'A and B', 'A, B and C', or 'none'."""
+    if not names:                                            # empty list
+        text = "none"
+    elif len(names) == 1:                                    # one name
+        text = names[0]
+    else:                                                    # two or more: commas, then "and" before the last
+        text = ", ".join(names[:-1]) + " and " + names[-1]
+
+    # RETURNS a str, e.g. join_names(['Dot-com crash', '2025 tariff shock']) -> 'Dot-com crash and 2025 tariff shock'
+    return text
+
+
+def aftermath_text(card):
+    """One sentence on the aftermath verdicts, naming only the verdicts that actually occur."""
+    parts = []                                               # e.g. ["overreacted in Dot-com crash and 2025 tariff shock", ...]
+    for label, phrase in [("VIX overreacted", "overreacted in"), ("VIX underestimated", "was still too low in"),
+                          ("About right", "was about right in")]:
+        names = names_with(card, "Aftermath", label)         # the shocks with this verdict
+        if names:                                            # skip verdicts nobody got, so the text never says "in none"
+            parts.append(f"{phrase} {join_names(names)}")
+    text = f"After day 0 the VIX {join_names(parts)}."       # glue the parts with commas and a final "and"
+
+    # RETURNS a str, e.g. 'After day 0 the VIX overreacted in Dot-com crash and 2025 tariff shock and was still too low
+    #  in 2008 financial crisis and Covid crash.'
+    return text
+
+
+def answer_text(card):
+    """The short answer at the top of the page, written from the numbers so it stays true after a re-run."""
+    n = len(card)                                            # number of shocks (4)
+    pre_low = names_with(card, "Pre-shock", "VIX underestimated")  # VIX too low before day 0
+    pre_high = names_with(card, "Pre-shock", "VIX overreacted")    # VIX too high before day 0
+    day0_low = names_with(card, "Day 0", "VIX underestimated")     # VIX too low on day 0
+    post_high = names_with(card, "Aftermath", "VIX overreacted")   # VIX too high after day 0
+    post_low = names_with(card, "Aftermath", "VIX underestimated")  # VIX still too low after day 0
+    pre_gaps = [c["phases"]["Pre-shock"]["gap"] for c in card]     # average pre-shock gap of each shock
+    if len(pre_low) > n / 2:                                 # most shocks: the VIX was too low going in
+        lead = "<b>Mostly no: it was too low going in.</b> "
+    elif len(pre_high) > n / 2:                              # most shocks: too high going in
+        lead = "<b>Mostly no: it was too high going in.</b> "
+    else:                                                    # no clear majority
+        lead = "<b>Only partly.</b> "
+    text = (lead + f"In {len(pre_low)} of {n} shocks the VIX sat below the volatility that followed during the {PRE_DAYS} "
+            f"trading days before day 0 (average gap {fmt(min(pre_gaps), True)} to {fmt(max(pre_gaps), True)} points), and on "
+            f"day 0 itself it was too low in {len(day0_low)} of {n}. In the {POST_DAYS} days after, it overreacted in "
+            f"{len(post_high)} and was still too low in {len(post_low)}.")
+
+    # RETURNS a str of HTML, about 330 characters, e.g.
+    # '<b>Mostly no: it was too low going in.</b> In 4 of 4 shocks the VIX sat below the volatility that followed during
+    #  the 40 trading days before day 0 (average gap -17.6 to -5.4 points), and on day 0 itself it was too low in 3 of 4.
+    #  In the 60 days after, it overreacted in 2 and was still too low in 2.'
+    return text
+
+
+def summary_table(card):
+    """The table of all four shocks: day 0, gap per phase, peaks and the fall to the low."""
+    rows = ""                                                # HTML table rows, built up one shock at a time
+    for c in card:
+        f, p, low = c["facts"], c["phases"], c["low"]        # short names for this shock's numbers
+        rows += (
+            f'<tr><td><i class="dot" style="background:var({c["color"]})"></i>'  # colour dot...
+            f'{escape(c["name"])}</td>'                      # ...and the shock name
+            f'<td>{f["day0_date"]:%d %b %Y}</td>'            # day 0 date
+            f'<td>{fmt(f["sp_day0_return"], True, "%")}</td>'  # S&P move on day 0
+            f'<td>{fmt(p["Pre-shock"]["gap"], True)}</td>'   # average gap before
+            f'<td>{fmt(p["Day 0"]["gap"], True)}</td>'       # gap on day 0
+            f'<td>{fmt(p["Aftermath"]["gap"], True)}</td>'   # average gap after
+            f'<td>{fmt(f["vix_peak"])} (day {f["vix_peak_day"]})</td>'  # VIX peak and when
+            f'<td>{fmt(f["realized_peak"])}</td>'            # peak realized volatility
+            f'<td>{fmt(low["fall"], True, "%")} ({low["low_date"]:%b %Y})</td></tr>')  # fall from day 0 to the bottom, and its month
+    html = ('<div class="scroll"><table class="sum">'       # the table sits in its own sideways-scrolling box
+            '<tr><th>Shock</th><th>Day 0</th><th>S&amp;P day 0</th><th>Gap: pre-shock</th>'
+            '<th>Gap: day 0</th><th>Gap: aftermath</th><th>VIX peak</th>'
+            f'<th>Peak realized</th><th>S&amp;P day 0 to low</th></tr>{rows}</table></div>'
+            '<p class="swipe-hint">Swipe the table sideways to see all columns &rarr;</p>')  # shown on phones only
+
+    # RETURNS a str of HTML: a header and one row per shock (4 rows), plus a swipe hint shown only on phones, e.g.
+    # <tr><td><i class="dot" ...></i>Covid crash</td><td>24 Feb 2020</td><td>-3.4%</td><td>-17.6</td><td>-67.4</td>
+    #     <td>-2.1</td><td>82.7 (day 15)</td><td>97.6</td><td>-30.6% (Mar 2020)</td></tr>
     return html
 
 
@@ -601,14 +782,14 @@ def phase_table_html(rows):
     body = "".join(                                          # glue the rows together into one string
         f"<tr><td>{r['phase']}</td><td>{r['days']}</td><td>{fmt(r['vix'])}</td>"  # phase, days, average VIX
         f"<td>{fmt(r['realized'])}</td><td>{fmt(r['gap'], signed=True)}</td>"  # average realized, average gap
-        f"<td>{verdict(r['gap'])}</td></tr>"                 # the verdict label
+        f"<td>{verdict(r['gap']).replace('underestimated', 'under&shy;estimated').replace('overreacted', 'over&shy;reacted')}</td></tr>"  # the verdict label; &shy; = an invisible hyphenation point, so the long word can break on a phone
         for r in rows)                                       # one <tr> per phase
-    html = ('<div class="tablewrap"><table><tr><th>Phase</th><th>Days</th>'  # header row...
+    html = ('<div class="scroll"><table class="phase"><tr><th>Phase</th><th>Days</th>'  # header row...
             '<th>Avg VIX</th><th>Avg realized</th><th>VIX - realized</th>'
             f'<th>Verdict</th></tr>{body}</table></div>')    # ...then the body rows
 
     # RETURNS a str of HTML (about 600 characters): a <table> with a header row and 3 body rows. For the Covid window:
-    # '<div class="tablewrap"><table><tr><th>Phase</th><th>Days</th><th>Avg VIX</th><th>Avg realized</th>
+    # '<div class="scroll"><table class="phase"><tr><th>Phase</th><th>Days</th><th>Avg VIX</th><th>Avg realized</th>
     #  <th>VIX - realized</th><th>Verdict</th></tr>
     #  <tr><td>Pre-shock</td><td>40</td><td>14.3</td><td>31.9</td><td>-17.6</td><td>VIX underestimated</td></tr>
     #  <tr><td>Day 0</td><td>1</td><td>25.0</td><td>92.5</td><td>-67.4</td><td>VIX underestimated</td></tr>
@@ -617,8 +798,8 @@ def phase_table_html(rows):
     return html
 
 
-def shock_panel(event, window):
-    """The full content of one shock's tab: title, tiles, chart, table, note."""
+def shock_tab(event, window, first):
+    """The content of one shock's tab: title, why this day, tiles, chart and phase table."""
     facts = key_facts(window)                                # headline numbers from the window
     low = event["low"]                                       # day 0 -> lowest point, computed on the full history
     tiles = "".join([                                        # five tiles glued into one string
@@ -630,114 +811,228 @@ def shock_panel(event, window):
              f"S&P day 0 to lowest point ({low['low_date']:%d %b %Y}, "
              f"{low['days_to_low']} trading days later)"),
     ])
+    hidden = "" if first else " hidden"                      # only the first tab is visible when the page opens
     html = f"""
-<section class="panel" id="{event['key']}" hidden>
-  <h2>{escape(event['name'])} - day 0 = {facts['day0_date']:%d %b %Y}</h2>
-  <p class="sub">{escape(event['why'])}</p>
-  <div class="tiles">{tiles}</div>
-  {chart_div('chart-' + event['key'], 480)}
+<div class="tabpanel" id="{event['key']}" role="tabpanel"{hidden}>
+  <h3><i class="dot" style="background:var({event['color']})"></i>{escape(event['name'])} - day 0 = {facts['day0_date']:%d %b %Y}</h3>
+  <p class="why">{escape(event['why'])}</p>
+  <div class="kpis five">{tiles}</div>
+  {chart_div('chart-' + event['key'], 480, event['name'] + ': VIX against the realized volatility that followed, with the daily gap')}
+  <p class="label">Averages by phase</p>
   {phase_table_html(phase_table(window))}
-  <p class="note">Solid line = VIX (the market's expectation); dashed = the
-  volatility that actually followed over the next {FORWARD_HORIZON} trading
-  days. Pre-shock days from -{FORWARD_HORIZON} onward already "look into" the
-  shock, which is why the VIX looks wrong there. Verdict threshold:
-  +/-{TOLERANCE:.0f} pts.</p>
-</section>"""
+</div>"""
 
-    # RETURNS a str of HTML (about 1,600 characters): one <section> that stays hidden until its tab is clicked.
+    # RETURNS a str of HTML (about 1,700 characters): one tab panel, hidden unless it is the first tab.
     # For the Covid window it is built like this:
-    # <section class="panel" id="covid" hidden>
-    #   <h2>Covid crash - day 0 = 24 Feb 2020</h2>
-    #   <p class="sub">First big panic day after the outbreak in Italy: ...</p>
-    #   <div class="tiles"> ...5 <div class="tile"> boxes... </div>
-    #   <div class="chart" id="chart-covid" style="height:480px"></div>      <- empty; the browser draws the chart here
-    #   <div class="tablewrap"> ...the phase table... </div>
-    #   <p class="note"> ...explanation... </p>
-    # </section>
+    # <div class="tabpanel" id="covid" role="tabpanel" hidden>
+    #   <h3><i class="dot" ...></i>Covid crash - day 0 = 24 Feb 2020</h3>
+    #   <p class="why">First big panic day after the outbreak in Italy: ...</p>
+    #   <div class="kpis five"> ...5 <div class="kpi"> boxes... </div>
+    #   <div class="chart" id="chart-covid" ...></div>      <- empty; the browser draws the chart here
+    #   <p class="label">Averages by phase</p> + the phase table
+    # </div>
     return html
 
 
-def dashboard_panel(windows):
-    """The Dashboard tab: a summary table of all four shocks plus three overlay charts."""
-    # One summary row per shock, pulling the phase averages together.
-    rows = ""                                                # HTML table rows, built up one shock at a time
-    for event, window in windows:
-        phases = {r["phase"]: r for r in phase_table(window)}  # look up a phase's numbers by its name
-        facts = key_facts(window)                            # headline numbers for this shock
-        rows += (
-            f'<tr><td><span class="sw" style="background:{event["color"]}"></span>'  # colour swatch...
-            f'{escape(event["name"])}</td>'                  # ...and the shock name
-            f'<td>{facts["day0_date"]:%d %b %Y}</td>'        # day 0 date
-            f'<td>{fmt(facts["sp_day0_return"], True, "%")}</td>'  # S&P move on day 0
-            f'<td>{fmt(phases["Pre-shock"]["gap"], True)}</td>'  # average gap before
-            f'<td>{fmt(phases["Day 0"]["gap"], True)}</td>'  # gap on day 0
-            f'<td>{fmt(phases["Aftermath"]["gap"], True)}</td>'  # average gap after
-            f'<td>{fmt(facts["vix_peak"])} (day {facts["vix_peak_day"]})</td>'  # VIX peak and when
-            f'<td>{fmt(facts["realized_peak"])}</td>'        # peak realized volatility
-            f'<td>{fmt(event["low"]["fall"], True, "%")} '   # fall from day 0 to the bottom...
-            f'({event["low"]["low_date"]:%b %Y})</td></tr>')  # ...and the month of the bottom
+def panel(number, question, finding, how, body, so=""):
+    """One numbered section: a question, its one-line finding, how to read it, the chart or table, and what it tells us."""
+    how_html = f'<p class="how"><b>How to read it.</b> {how}</p>' if how else ""          # optional reading guide
+    so_html = f'<div class="so">{so}</div>' if so else ""                                  # optional takeaway
 
-    html = f"""
-<section class="panel" id="dashboard" hidden>
-  <h2>All four shocks together</h2>
-  <p class="sub">Every shock re-aligned so that day 0 is the same point on the
-  x-axis. Avg gap = VIX - realized volatility, in annualized vol points.</p>
-  <div class="tablewrap"><table>
-    <tr><th>Shock</th><th>Day 0</th><th>S&P day 0</th><th>Gap: pre-shock</th>
-    <th>Gap: day 0</th><th>Gap: aftermath</th><th>VIX peak</th>
-    <th>Peak realized</th><th>S&P day 0 to low</th></tr>{rows}
-  </table></div>
-  <p class="swipe-hint">Swipe the table sideways to see all columns &rarr;</p>
-  {chart_div('chart-levels', 340)}
-  {chart_div('chart-gap', 320)}
-  {chart_div('chart-sp', 320)}
-  <p class="note">Gap above 0 = VIX overpriced volatility; below 0 = the market
-  underestimated what was coming.</p>
-</section>"""
+    # RETURNS a str of HTML, e.g. '<section class="panel"><p class="tag">01</p><h2>How did the VIX score in each shock?</h2>
+    #  <p class="dek">Before day 0 the VIX was too low in 4 of 4 shocks ...</p><p class="how">...</p>...</section>'
+    return (f'<section class="panel"><p class="tag">{number:02d}</p><h2>{escape(question)}</h2>'
+            f'<p class="dek">{finding}</p>{how_html}{body}{so_html}</section>')
 
-    # RETURNS a str of HTML: one <section id="dashboard" hidden> built like this:
-    # <section class="panel" id="dashboard" hidden>
-    #   <h2>All four shocks together</h2>
-    #   <div class="tablewrap"><table> ...header + one row per shock (4 rows)... </table></div>
-    #   <p class="swipe-hint">Swipe the table sideways...</p>     <- visible on phones only
-    #   <div class="chart" id="chart-levels" style="height:340px"></div>    <- 3 empty chart boxes;
-    #   <div class="chart" id="chart-gap" style="height:320px"></div>       <- the browser draws
-    #   <div class="chart" id="chart-sp" style="height:320px"></div>        <- the charts in them
-    #   <p class="note"> ...explanation... </p>
-    # </section>
+
+def glossary():
+    """The key ideas, in plain words, with the settings of this study filled in from the constants."""
+    terms = [                                                # (term, plain-language meaning)
+        ("VIX (expected)", "The market's expectation of S&amp;P 500 volatility over roughly the next month, read from option "
+                           "prices and quoted as an annualized %. VIX(t) is a claim about the days AFTER t."),
+        (f"Realized volatility, next {FORWARD_HORIZON}d (actual)",
+         f"What volatility actually turned out to be: the spread (standard deviation) of the S&amp;P 500's daily log returns "
+         f"over the {FORWARD_HORIZON} trading days after each date, annualized (x &radic;252) and in %. It looks at the days "
+         f"after t, not the days before, which would compare the VIX to the wrong time window."),
+        ("Gap (VIX - realized)", "How far the VIX was from the volatility that followed, in annualized vol points. A positive "
+                                 "gap means the VIX overpriced volatility; a negative gap means the market underestimated what was coming."),
+        ("Day 0", "The first big panic day of each shock, not necessarily the worst day, so the pre-shock window stays "
+                  "genuinely calm. Each date was checked against the data: worst S&amp;P day or biggest one-day VIX jump of the episode."),
+        ("Pre-shock and aftermath", f"Pre-shock: the {PRE_DAYS} trading days before day 0. Aftermath: the {POST_DAYS} trading "
+                                    f"days after it. Counting trading days, not calendar days, keeps weekends and holidays out."),
+        ("Verdict", f"Average gap above +{TOLERANCE:.0f} pts: VIX overreacted. Below -{TOLERANCE:.0f}: VIX underestimated. "
+                    f"In between: about right."),
+    ]
+    html = '<dl class="gloss">' + "".join(f"<div><dt>{t}</dt><dd>{d}</dd></div>" for t, d in terms) + "</dl>"  # one <dt>/<dd> pair per term
+
+    # RETURNS a str of HTML: a <dl> with 6 terms, e.g.
+    # '<dl class="gloss"><div><dt>VIX (expected)</dt><dd>The market's expectation of S&amp;P 500 volatility ...</dd></div> ...</dl>'
     return html
 
 
-def build_page(windows):
+REFERENCES = [                            # (source name = the link text, what it gave us, link) for the data and the companion page
+    ("Yahoo Finance, ^GSPC", "daily S&P 500 closes, downloaded with yfinance", "https://finance.yahoo.com/quote/%5EGSPC/"),
+    ("Yahoo Finance, ^VIX", "daily VIX closes, downloaded with yfinance", "https://finance.yahoo.com/quote/%5EVIX/"),
+    ("Does the VIX overprice volatility?", "companion page: the VIX against what followed over 30 years (VIX/volatility.py)",
+     "volatility.html"),
+]
+
+
+def references():
+    """The quiet 'References' block after the last panel: small muted lines, no panel box, no question heading."""
+    items = ""                                               # the <li> lines, built one by one
+    for name, gave, url in REFERENCES:
+        new_tab = ' target="_blank" rel="noopener"' if url.startswith("http") else ""  # outside sites in a new tab, our own page in the same tab
+        items += (f'<li><a href="{escape(url)}"{new_tab}>{escape(name)}</a>'  # the source name is the link (40px tall via CSS)
+                  f'<span class="sep"> &middot; </span>{escape(gave)}</li>')         # then, in plain muted text, what it gave us
+    html = (f'<aside class="refs" aria-label="References"><p class="refs-title">References</p>'  # small uppercase label, not a question
+            f'<ul>{items}</ul></aside>')                     # the lines themselves
+
+    # RETURNS a str of HTML (about 600 characters): an <aside> with a small label and a <ul> of 3 lines, e.g.
+    # '<aside class="refs" aria-label="References"><p class="refs-title">References</p><ul>
+    #  <li><a href="https://finance.yahoo.com/quote/%5EGSPC/" target="_blank" rel="noopener">Yahoo Finance, ^GSPC</a>
+    #      <span class="sep"> &middot; </span>daily S&amp;P 500 closes, downloaded with yfinance</li>
+    #  ... ^VIX line ...
+    #  <li><a href="volatility.html">Does the VIX overprice volatility?</a> &middot; companion page: ...</li></ul></aside>'
+    return html
+
+
+def conclusions(card):
+    """The 'What did we learn?' list, written from the numbers."""
+    n = len(card)                                            # number of shocks
+    pre_low = names_with(card, "Pre-shock", "VIX underestimated")  # VIX too low before day 0
+    day0_low = names_with(card, "Day 0", "VIX underestimated")     # VIX too low on day 0
+    day0_other = [c["name"] for c in card if c["name"] not in day0_low]  # the exceptions on day 0
+    worst = min(card, key=lambda c: c["phases"]["Day 0"]["gap"])  # the shock with the most negative day-0 gap
+    falls = [c["low"]["fall"] for c in card]                 # S&P fall from day 0 to the low, per shock
+    days = [c["low"]["days_to_low"] for c in card]           # trading days from day 0 to the low, per shock
+    items = [
+        (f"<b>Going in, the VIX was too low.</b> In {len(pre_low)} of {n} shocks the average gap over the {PRE_DAYS} "
+         f"pre-shock days was below -{TOLERANCE:.0f} points: the market underestimated what was coming."),
+        (f"<b>On day 0 it was still too low in {len(day0_low)} of {n}</b> (exception: {join_names(day0_other)}). The biggest "
+         f"miss was {fmt(worst['phases']['Day 0']['gap'], True)} points in the {worst['name']}."),
+        f"<b>Mixed in the aftermath.</b> {aftermath_text(card)}",
+        (f"<b>The shocks were very different.</b> From day 0 to the lowest point the S&amp;P 500 fell between "
+         f"{fmt(max(falls), True, '%')} and {fmt(min(falls), True, '%')}, and the bottom came {min(days)} to {max(days)} "
+         f"trading days after day 0."),
+        (f"<b>Limits.</b> Four shocks is a tiny sample, and day 0 was picked by hand. The pre-shock gap is partly built in: "
+         f"from day -{FORWARD_HORIZON} onward the realized volatility of the next {FORWARD_HORIZON} days already includes the "
+         f"shock, which no forecast made on those days could know."),
+    ]
+
+    # RETURNS a list of 5 HTML strings, e.g.
+    # ['<b>Going in, the VIX was too low.</b> In 4 of 4 shocks the average gap over the 40 pre-shock days was below -2 points ...',
+    #  '<b>On day 0 it was still too low in 3 of 4</b> (exception: Dot-com crash). The biggest miss was -67.4 points in the Covid crash.',
+    #  ...]
+    return items
+
+
+def build_page(windows, data):
     """Assemble the whole standalone web page."""
-    buttons = "".join(                                       # one tab button per shock
-        f'<button data-tab="{e["key"]}" style="--tab-color:{e["color"]}" '  # data-tab says which panel it opens
-        f'role="tab">{escape(e["name"])}</button>' for e, _ in windows)
-    buttons += '<button data-tab="dashboard" role="tab">Dashboard</button>'  # plus the Dashboard tab at the end
-    panels = "".join(shock_panel(e, w) for e, w in windows) + dashboard_panel(windows)  # the four shock panels, then the dashboard panel
-    page = f"""<!doctype html>
-<html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>VIX around market shocks</title>
-<style>{CSS}</style>
-<script>{ECHARTS_PATH.read_text(encoding='utf-8')}</script>
-</head><body><main>
-<h1>VIX vs what actually happened, around four market shocks</h1>
-<p class="sub">{PRE_DAYS} trading days before day 0, day 0, and {POST_DAYS} days
-after. S&amp;P 500 and VIX data from Yahoo Finance.</p>
-<div class="tabs" role="tablist">{buttons}</div>
-{panels}
-<script>{ECHARTS_JS.replace('__DATA__', json.dumps(chart_data(windows)))}{JS}showTab('{windows[0][0]['key']}');</script>
-</main></body></html>"""
+    card = scorecard(windows)                                # per-shock numbers, used by every piece of text
+    n = len(card)                                            # number of shocks
+    pre_low = names_with(card, "Pre-shock", "VIX underestimated")  # VIX too low before day 0
+    day0_low = names_with(card, "Day 0", "VIX underestimated")     # VIX too low on day 0
+    worst = min(card, key=lambda c: c["phases"]["Day 0"]["gap"])  # biggest day-0 miss
+    vix_top = max(card, key=lambda c: c["facts"]["vix_peak"])      # highest VIX peak
+    real_top = max(card, key=lambda c: c["facts"]["realized_peak"])  # highest realized-volatility peak
 
-    # RETURNS a str of about 1,047,000 characters (~1 MB, because the ECharts library is embedded): a complete,
+    kpis = "".join(                                          # one headline card per shock: its day-0 gap
+        tile(fmt(c["phases"]["Day 0"]["gap"], True), f"{c['name']} · VIX - realized on day 0, pts", c["color"]) for c in card)
+    buttons = "".join(                                       # one tab button per shock
+        f'<button type="button" data-tab="{e["key"]}" role="tab" aria-selected="{str(i == 0).lower()}">'  # data-tab says which tab panel it opens
+        f'<i class="dot" style="background:var({e["color"]})"></i>{escape(e["name"])}</button>'
+        for i, (e, _) in enumerate(windows))
+    tabs = "".join(shock_tab(e, w, i == 0) for i, (e, w) in enumerate(windows))  # the four shock tabs, the first one visible
+    take = '<ol class="take">' + "".join(f"<li>{x}</li>" for x in conclusions(card)) + "</ol>"  # numbered takeaways
+    hint = '<p class="note"><span class="hint">Hover over or click</span> a chart to read the values of a day.</p>'  # "Tap" on touch screens (JS)
+    lows = "; ".join(                                        # per shock: days to the bottom and when the old high came back
+        f"{c['name']}: {c['low']['days_to_low']} trading days, old high regained {c['low']['recovery_date']:%b %Y}"
+        if c["low"]["recovery_date"] is not None
+        else f"{c['name']}: {c['low']['days_to_low']} trading days, old high not regained yet" for c in card)
+
+    panels = "".join([
+        panel(1, "How did the VIX score in each shock?",
+              f"Before day 0 the VIX was too low in {len(pre_low)} of {n} shocks; on day 0, in {len(day0_low)} of {n}.",
+              f"Every shock re-aligned so that day 0 is the same point. Gap = VIX - realized volatility over the next "
+              f"{FORWARD_HORIZON} trading days, in annualized vol points: above 0 the VIX overpriced volatility, below 0 the "
+              f"market underestimated what was coming. Pre-shock and aftermath are averages over the {PRE_DAYS} days before "
+              f"and the {POST_DAYS} days after.",
+              summary_table(card),
+              f"<p>Pre-shock days from -{FORWARD_HORIZON} onward already \"look into\" the shock: their next {FORWARD_HORIZON} "
+              f"days include it. That is part of why the VIX looks so wrong just before day 0.</p>"),
+        panel(2, "What exactly are we measuring?",
+              f"The VIX on each day, scored against the volatility of the next {FORWARD_HORIZON} trading days.",
+              "", glossary()),
+        panel(3, "How far off was the VIX, day by day?",
+              f"The biggest day-0 miss: {fmt(worst['phases']['Day 0']['gap'], True)} points in the {worst['name']}.",
+              "One line per shock: VIX - realized volatility, on the same \"trading days since day 0\" axis. Above 0 the VIX "
+              "overpriced volatility; below 0 the market underestimated what was coming. The dotted line is day 0.",
+              chart_div("chart-gap", 320, "Gap between the VIX and realized volatility, four shocks, 40 days before to 60 days after day 0") + hint,
+              f"<p>{aftermath_text(card)}</p>"),
+        panel(4, "Did the VIX jump as high as volatility did?",
+              f"Highest VIX: {fmt(vix_top['facts']['vix_peak'])} ({vix_top['name']}); highest realized volatility: "
+              f"{fmt(real_top['facts']['realized_peak'])} ({real_top['name']}).",
+              f"Left: the VIX (expected). Right: the volatility that actually followed over the next {FORWARD_HORIZON} days. "
+              "Both use the same scale, so they can be compared by eye. On a phone the two are stacked.",
+              chart_div("chart-levels", 360, "VIX and realized volatility for the four shocks, aligned on day 0")),
+        panel(5, "How far did the S&P 500 fall?",
+              "From day 0 to the lowest point: " + ", ".join(f"{c['name']} {fmt(c['low']['fall'], True, '%')}" for c in card) + ".",
+              f"The S&amp;P 500 is set to 100 on the day before day 0, so index levels decades apart become comparable. The "
+              f"chart shows {POST_DAYS} days after day 0; the fall to the lowest point is measured on the full history, until the "
+              f"index first regains its old high.",
+              chart_div("chart-sp", 320, "S&P 500 indexed to 100 on the day before day 0, four shocks"),
+              f"<p>The bottom came after {lows}.</p>"),
+        panel(6, "What happened in each shock?",
+              "Day 0 is the first big panic day of each shock, not always the worst one.",
+              f"Solid line = VIX (the market's expectation); dashed = the volatility that actually followed over the next "
+              f"{FORWARD_HORIZON} trading days. The bars below are the gap: blue = VIX too high, red = VIX too low. Shaded = "
+              f"the {PRE_DAYS} pre-shock days. Verdict threshold: +/-{TOLERANCE:.0f} pts.",
+              f'<div class="tabs" role="tablist" aria-label="Shock">{buttons}</div>{tabs}{hint}'),
+        panel(7, "What did we learn?", "Five takeaways.", "", take),  # always the last panel
+    ])
+
+    page = f"""<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>VIX Around Market Shocks</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="{FONTS_URL}" rel="stylesheet">
+<style>{CSS}</style>
+<script src="{ECHARTS_URL}"></script>
+</head>
+<body>
+<header class="band"><div class="in">
+<a class="back" href="../../index.html">&larr; Macro Quant Lab</a>
+<p class="eyebrow">VIX vs realized volatility</p>
+<h1>Was the VIX right about four market shocks?</h1>
+<p class="answer">{answer_text(card)}</p>
+<p class="meta">{PRE_DAYS} trading days before day 0, day 0, and {POST_DAYS} days after · S&amp;P 500 and VIX daily data
+{data.index[0]:%b %Y} to {data.index[-1]:%d %b %Y}, Yahoo Finance · Not investment advice</p>
+</div></header>
+<main class="in">
+<div class="kpis top">{kpis}</div>
+{panels}
+{references()}
+</main>
+<footer><div class="in">Generated by VIX/shocks.py from Yahoo Finance daily closes (S&amp;P 500 ^GSPC, VIX ^VIX).
+Learning project, not investment advice.</div></footer>
+<script>{ECHARTS_JS.replace('__DATA__', json.dumps(chart_data(windows)))}{JS}</script>
+</body>
+</html>
+"""
+
+    # RETURNS a str of about 70,000 characters (~70 KB; ECharts itself is loaded from the CDN): a complete,
     # standalone HTML document. It starts like this:
     # <!doctype html>
-    # <html lang="en"><head><meta charset="utf-8">
-    # <meta name="viewport" content="width=device-width, initial-scale=1">
-    # <title>VIX around market shocks</title>
-    # ...and contains the CSS, the ECharts library, the 4 tab buttons + Dashboard button, the 5 panels,
-    # the chart data as JSON and the JavaScript that draws the charts.
+    # <html lang="en">
+    # <head>
+    # <meta charset="utf-8">
+    # ...and contains the Lab CSS, the burgundy header with the question and short answer, 4 headline cards,
+    # 7 numbered panels (summary table, key ideas, 3 comparison charts, the 4 shock tabs, takeaways), then the
+    # quiet "References" lines, the chart data as JSON and the JavaScript that draws the charts.
     return page
 
 

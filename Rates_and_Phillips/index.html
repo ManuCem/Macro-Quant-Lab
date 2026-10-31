@@ -3,92 +3,155 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Interest rates &amp; Phillips curve - Macro Quant Lab</title>
+<title>Interest Rates &amp; Phillips Curve</title>
+<!-- Section menu: built exactly like the homepage (header band, one featured study overlapping it, then a grid of
+     the other pages), in this section's own colours: petrol band, aqua accent -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-  /* Colours as tokens: light by default, dark when the viewer's system is dark */
+  /* Petrol header band, light page; dark mode darkens the page. --brass is this section's aqua accent.
+     Each card carries its own colour (--c-l light, --c-d dark, set on the card) for its hover highlight and topic label */
   :root {
     color-scheme: light dark;
-    --page: #f9f9f7;  --surface: #fcfcfb;  --ink: #0b0b0b;  --ink-2: #52514e;
-    --border: #e1e0d9;  --hover: #c3c2b7;
+    --band: #0e3a46;  --band-ink: #e4e6ea;  --brass: #2a9db0;  --green: #2a9db0;  /* default hover colour */
+    --page: #f6f5f2;  --surface: #ffffff;  --ink: #16181d;  --ink-2: #555a63;  --line: #e2e0da;
   }
   @media (prefers-color-scheme: dark) {
-    :root { --page: #0d0d0d; --surface: #1a1a19; --ink: #ffffff; --ink-2: #c3c2b7;
-            --border: #2c2c2a; --hover: #4a4a46; }
+    :root { --band: #0a2832; --page: #0f1012; --surface: #18191d; --ink: #ececee; --ink-2: #aaadb5;
+            --line: #2a2c31; --brass: #5cc4d2; --green: #5cc4d2; }
   }
-
+  .feature, .card { --c: var(--c-l, var(--green)); }                   /* the card's project colour */
+  @media (prefers-color-scheme: dark) { .feature, .card { --c: var(--c-d, var(--green)); } }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--page); color: var(--ink);
-         font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+         font: 16px/1.6 "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .in { max-width: 1100px; margin: 0 auto; padding: 0 20px; }
+  .serif { font-family: "DM Serif Display", Georgia, serif; font-weight: 400; }
 
-  /* One centred column; the side padding keeps a gutter on phones */
-  main { max-width: 760px; margin: 0 auto; padding: 40px 20px 40px; }
+  /* Header band: back link, topic label, the question, what the section covers, GitHub button */
+  header { background: var(--band); color: var(--band-ink); padding: 8px 0 120px; }
+  .back { display: inline-flex; align-items: center; min-height: 44px; color: var(--band-ink); text-decoration: none; font-size: 14px; }
+  .back:hover { color: #fff; }
+  .eyebrow { color: var(--brass); font-size: 13px; letter-spacing: .14em; text-transform: uppercase; font-weight: 700; margin: 24px 0 14px; }
+  h1 { color: #fff; font-size: clamp(34px, 6vw, 54px); line-height: 1.08; margin: 0 0 16px; max-width: 20ch; }
+  .lead { max-width: 56ch; font-size: 18px; margin: 0 0 28px; }
+  .gh { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 20px;
+        border: 1px solid var(--brass); color: #fff; border-radius: 999px; text-decoration: none; font-weight: 700; font-size: 15px; }
+  .gh:hover { background: var(--brass); color: var(--band); }
+  .gh-logo { width: 20px; height: 20px; fill: currentColor; flex: none; }   /* GitHub mark, takes the text colour */
+  footer .gh-logo { width: 16px; height: 16px; vertical-align: -3px; margin-right: 6px; }
 
-  .back { display: inline-block; padding: 10px 8px 10px 0; margin-bottom: 18px; color: var(--ink-2);
-          text-decoration: none; font-size: 15px; }
-  .back:hover { color: var(--ink); text-decoration: underline; }
+  /* Featured (main) study overlaps the band (negative margin) */
+  .feature { margin-top: -84px; display: grid; grid-template-columns: 1.3fr 1fr; background: var(--surface);
+             border: 1px solid var(--line); border-radius: 14px; overflow: hidden; color: inherit; text-decoration: none;
+             box-shadow: 0 20px 48px rgba(0,0,0,.12); }
+  .feature .img { position: relative; background: var(--band); min-height: 340px; overflow: hidden; }
+  /* image fills the left half without dictating its height */
+  .feature .img img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; }
+  .feature .txt { padding: 36px; display: flex; flex-direction: column; gap: 12px; justify-content: center; }
+  .badge { align-self: flex-start; font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+           color: var(--band); background: #cfeaee; padding: 4px 10px; border-radius: 4px; }   /* pale aqua: the homepage's pale brass, in this section's hue */
+  .feature h2 { font-size: 34px; line-height: 1.1; margin: 0; }
+  .feature p { margin: 0; color: var(--ink-2); }
 
-  h1 { font-size: 32px; line-height: 1.2; margin: 0 0 8px; letter-spacing: -0.01em; }
-  .lead { margin: 0 0 40px; color: var(--ink-2); max-width: 56ch; }
+  /* Hover animation shared by the featured study and every card:
+     the border lights up in the card's colour, a soft ring appears and the card lifts 4px */
+  .feature, .card { transition: border-color .25s, box-shadow .25s, transform .25s; }
+  @media (hover: hover) {   /* mouse only: on phones a tap would leave the card stuck in its hover look */
+    .feature:hover, .card:hover {
+      border-color: var(--c);
+      box-shadow: 0 0 0 1px var(--c), 0 16px 36px rgba(0, 0, 0, .28);
+      transform: translateY(-4px);
+    }
+  }
+  .feature .img img { transition: transform .4s; transform-origin: top center; }
+  .feature:hover .img img { transform: scale(1.03); }
 
-  /* Cards: two columns on wide screens, stacked on narrow ones */
-  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
-  .card { display: flex; flex-direction: column; gap: 0; overflow: hidden;
-          background: var(--surface); border: 1px solid var(--border);
-          border-radius: 10px;
-          color: inherit; text-decoration: none;
-          transition: border-color .15s, transform .15s, box-shadow .15s; }
-  .card:hover { border-color: var(--hover); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.08); }
-  .card:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
-  .card .thumb { aspect-ratio: 16 / 9; background: var(--page); overflow: hidden;
-                 border-bottom: 3px solid var(--accent); }
-  .card .thumb img { width: 100%; height: 100%; object-fit: cover; display: block;
-                      transition: transform .3s; }
-  .card:hover .thumb img { transform: scale(1.04); }
-  .card .body { display: flex; flex-direction: column; gap: 6px; padding: 18px 20px 18px; flex: 1; }
-  .card h2 { font-size: 19px; margin: 0; }
+  /* Section title */
+  .section { display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+             margin: 64px 0 20px; border-bottom: 1px solid var(--line); padding-bottom: 12px; }
+  .section h3 { font-size: 28px; margin: 0; }
+  .section span { color: var(--ink-2); font-size: 14px; }
+
+  /* Grid of the other pages in this section */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px; padding-bottom: 64px; }
+  /* Each card is a framed box so its border can light up on hover; the whole card is the link */
+  .card { display: flex; flex-direction: column; color: inherit; text-decoration: none;
+          background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  /* Previews are 4:3 header close-ups: the box anchored to the top shows the label, title and key numbers */
+  .card .img { display: block; aspect-ratio: 4 / 3; background: var(--band); overflow: hidden; border-bottom: 1px solid var(--line); }
+  .card .txt { display: block; padding: 4px 20px 22px; }
+  .card .img img { width: 100%; height: 100%; object-fit: cover; object-position: top center; display: block;
+                   transform-origin: top center; transition: transform .3s; }
+  .card:hover .img img { transform: scale(1.03); }
+  .card .topic { display: block; margin: 16px 0 4px; font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--c); }
+  .card h4 { font-size: 23px; line-height: 1.2; margin: 0 0 6px; }
+  .card h4 { transition: color .25s; }
+  .card:hover h4 { color: var(--c); }
   .card p { margin: 0; color: var(--ink-2); font-size: 15px; }
-  .card .go { margin-top: auto; padding-top: 14px; font-weight: 600; color: var(--ink); }
-  .card:hover .go span { display: inline-block; transform: translateX(4px); }
-  .go span { transition: transform .15s; }
+  a:focus-visible { outline: 3px solid var(--brass); outline-offset: 3px; }
+
+  footer { background: var(--band); color: var(--band-ink); font-size: 14px; }
+  footer .in { padding: 22px 20px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+  footer a { color: #fff; display: inline-block; padding: 12px 4px; margin: -12px -4px; }
+
+  @media (max-width: 760px) {
+    header { padding: 8px 0 96px; }
+    .feature { grid-template-columns: 1fr; margin-top: -64px; }
+    .feature .img { min-height: 0; aspect-ratio: 4 / 3; }   /* the preview is 4:3, so show it whole on a phone */
+    .feature .txt { padding: 24px 20px; }
+    .feature h2 { font-size: 28px; }
+    .section { margin-top: 48px; }
+  }
 </style>
 </head>
 <body>
-<main>
-  <!-- ../index.html = the home page, one folder up -->
-  <a class="back" href="../index.html">&larr; Macro Quant Lab</a>
+<header>
+  <div class="in">
+    <!-- ../index.html = the home page, one folder up -->
+    <a class="back" href="../index.html">&larr; Macro Quant Lab</a>
+    <p class="eyebrow">Monetary policy</p>
+    <h1 class="serif">Where are interest rates, and did cheap money work?</h1>
+    <p class="lead">Policy rates of the two biggest central banks, and how US inflation and unemployment moved with interest rates in 2008 and Covid.</p>
+    <a class="gh" href="https://github.com/ManuCem/Macro-Quant-Lab/tree/main/Rates_and_Phillips" target="_blank" rel="noopener">
+      <svg class="gh-logo" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+      View the code on GitHub <span aria-hidden="true">&#8599;</span></a>
+  </div>
+</header>
 
-  <h1>Interest rates &amp; Phillips curve</h1>
-  <p class="lead">Policy rates of the two biggest central banks, and how US inflation and unemployment moved with interest rates in 2008 and Covid.</p>
+<main class="in">
+  <!-- Main study of this section, shown large; ecb_rates.html, fed_rates.html and rates_phillips.html sit in this same folder -->
+  <a class="feature" href="rates_phillips.html" style="--c-l:#2a9db0;--c-d:#5cc4d2">
+    <span class="img"><img src="rates_phillips_preview.png" alt="" width="1120" height="840"></span>
+    <span class="txt">
+      <span class="badge">Main study</span>
+      <h2 class="serif">Rates &amp; the Phillips curve</h2>
+      <p>Did low interest rates bring the recovery? Fed funds, unemployment and inflation in 2008 and Covid.</p>
+    </span>
+  </a>
 
-  <nav class="cards" aria-label="Central banks">
-    <!-- ecb_rates.html and fed_rates.html sit in this same folder -->
-    <a class="card" href="ecb_rates.html" style="--accent:#2a78d6">
-      <span class="thumb"><img src="ecb_rates_preview.png" alt="" loading="lazy" width="640" height="360"></span>
-      <span class="body">
-        <h2>ECB</h2>
-        <p>European Central Bank: the key interest rates.</p>
-        <span class="go">Open ECB rates <span aria-hidden="true">&rarr;</span></span>
-      </span>
+  <div class="section"><h3 class="serif">More in this section</h3><span>2 more</span></div>
+
+  <section class="grid" aria-label="More in this section">
+    <a class="card" href="ecb_rates.html" style="--c-l:#2a9db0;--c-d:#5cc4d2">
+      <span class="img"><img src="ecb_rates_preview.png" alt="" loading="lazy" width="1120" height="840"></span>
+      <span class="txt"><span class="topic">European Central Bank</span>
+      <h4 class="serif">ECB key interest rates</h4>
+      <p>Is the ECB raising or cutting? The key interest rates since 1999, with the 3-month Euribor.</p></span>
     </a>
-
-    <a class="card" href="fed_rates.html" style="--accent:#1baf7a">
-      <span class="thumb"><img src="fed_rates_preview.png" alt="" loading="lazy" width="640" height="360"></span>
-      <span class="body">
-        <h2>Federal Reserve</h2>
-        <p>US Federal Reserve: EFFR and SOFR.</p>
-        <span class="go">Open Fed rates <span aria-hidden="true">&rarr;</span></span>
-      </span>
+    <a class="card" href="fed_rates.html" style="--c-l:#2a9db0;--c-d:#5cc4d2">
+      <span class="img"><img src="fed_rates_preview.png" alt="" loading="lazy" width="1120" height="840"></span>
+      <span class="txt"><span class="topic">Federal Reserve</span>
+      <h4 class="serif">EFFR and SOFR</h4>
+      <p>Do the two US overnight rates tell the same story? EFFR since 2000 and SOFR since 2018.</p></span>
     </a>
-
-    <a class="card" href="rates_phillips.html" style="--accent:#eb6834">
-      <span class="thumb"><img src="rates_phillips_preview.png" alt="" loading="lazy" width="640" height="360"></span>
-      <span class="body">
-        <h2>Rates &amp; the Phillips curve</h2>
-        <p>Did low interest rates bring the recovery? Fed funds, unemployment and inflation in 2008 and Covid.</p>
-        <span class="go">Open the analysis <span aria-hidden="true">&rarr;</span></span>
-      </span>
-    </a>
-  </nav>
+  </section>
 </main>
+
+<footer><div class="in">
+  <a href="../index.html">Macro Quant Lab</a>
+  <span>Code on <a href="https://github.com/ManuCem/Macro-Quant-Lab"><svg class="gh-logo" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>GitHub</a></span>
+</div></footer>
 </body>
 </html>

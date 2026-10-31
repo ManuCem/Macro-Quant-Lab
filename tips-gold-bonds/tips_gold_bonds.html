@@ -2,197 +2,159 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Real yields, bonds and gold</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Real Yields, Bonds and Gold</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-/* colour tokens: light by default, dark when the phone/computer is in dark mode */
-:root{--bg:#fafaf7;--card:#ffffff;--ink:#1c1f24;--ink2:#515862;--muted:#7a818c;--line:#dcdfe4;
---bond:#2a6fdb;--tips:#d9730d;--gold:#b8860b;--good:#1f8a4c;--bad:#c23a3a;--soft:#eef1f6}
-@media (prefers-color-scheme:dark){:root{--bg:#14161a;--card:#1c1f25;--ink:#eceff3;--ink2:#b4bac4;--muted:#8b929d;--line:#343942;
---bond:#6ea3ff;--tips:#f0a050;--gold:#e0b84a;--good:#4cc582;--bad:#ef7b7b;--soft:#262a32}}
+:root{color-scheme:light dark;--band:#3a2b10;--band-ink:#e4e6ea;--brass:#c49a45;--page:#f6f5f2;--surface:#fff;--ink:#16181d;--ink-2:#555a63;
+  --muted:#868b94;--grid:#e4e2dc;--axis:#c9c7c0;--bond:#2a5db0;--tips:#b85a18;--gold:#a8841c;--good:#1f7a55;--bad:#b23a3a;--on-color:#fff}
+@media (prefers-color-scheme:dark){:root{--band:#281d0a;--brass:#d8b26a;--page:#0f1012;--surface:#18191d;--ink:#ececee;--ink-2:#aaadb5;
+  --muted:#80848c;--grid:#2a2c31;--axis:#3f4248;--bond:#6d9be0;--tips:#e08a4c;--gold:#d9b54a;--good:#3fa37c;--bad:#e07b7b;--on-color:#0f1513}}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
-padding:0 max(16px,env(safe-area-inset-right)) 40px max(16px,env(safe-area-inset-left))}
-main{max-width:860px;margin:0 auto}
-h1{font-size:1.7rem;line-height:1.2;margin:28px 0 8px}
-h2{font-size:1.25rem;margin:0 0 8px}
+body{margin:0;background:var(--page);color:var(--ink);font:16px/1.6 "DM Sans",system-ui,-apple-system,"Segoe UI",sans-serif}
+h1,h2,.kpi b{font-family:"DM Serif Display",Georgia,serif;font-weight:400}
+a{color:inherit}
 p{margin:0 0 12px}
-.lead{color:var(--ink2);font-size:1.05rem}
-section{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px 18px;margin:18px 0}
-.tag{display:inline-block;font-size:.78rem;color:var(--ink2);background:var(--soft);border-radius:999px;padding:3px 10px}
-.def{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
-.def div{background:var(--soft);border-radius:10px;padding:10px 12px;font-size:.93rem}
-.def .t{display:block;font-weight:700;margin-bottom:2px}
-.stack{display:flex;height:48px;border-radius:8px;overflow:hidden;gap:2px;margin:14px 0 6px}
-.stack div{display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;font-size:.92rem;min-width:0}
-.eq{font-size:1.05rem;font-weight:600;margin:6px 0}
-.note{color:var(--ink2);font-size:.9rem}
-.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
-table{border-collapse:collapse;width:100%;font-size:.92rem}
-th,td{text-align:right;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
-th:first-child,td:first-child{text-align:left;position:sticky;left:0;background:var(--card)}
+.in{max-width:1000px;margin:0 auto;padding:0 max(20px,env(safe-area-inset-right)) 0 max(20px,env(safe-area-inset-left))}
+.band{background:var(--band);color:var(--band-ink);padding:8px 0 96px}
+a.back{display:inline-flex;align-items:center;min-height:44px;color:var(--band-ink);text-decoration:none;font-size:14px}
+a.back:hover{color:#fff}
+.eyebrow{margin:24px 0 12px;color:var(--brass);font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase}
+h1{margin:0;color:#fff;font-size:clamp(32px,5.5vw,50px);line-height:1.08;max-width:20ch}
+.answer{margin:18px 0 0;max-width:68ch}
+.answer b{color:#fff}
+.meta{margin:14px 0 0;font-size:13px;opacity:.75}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.kpis.top{margin-top:-64px}
+.kpis.two{grid-template-columns:1fr 1fr;margin:12px 0}
+.kpi{background:var(--surface);border:1px solid var(--grid);border-radius:12px;padding:16px 18px}
+.top .kpi{box-shadow:0 14px 34px rgba(0,0,0,.10)}
+.kpi b{display:block;font-size:30px;font-variant-numeric:tabular-nums}
+.kpi span{font-size:13px;color:var(--ink-2)}
+.kpi b.pos{color:var(--good)}.kpi b.neg{color:var(--bad)}
+.panel{background:var(--surface);border:1px solid var(--grid);border-radius:14px;padding:28px;margin-top:20px}
+.panel .tag{margin:0;color:var(--brass);font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
+h2{margin:4px 0 2px;font-size:28px;line-height:1.15}
+.dek{margin:0 0 18px;font-weight:700}
+.how{background:var(--page);border-radius:10px;padding:12px 16px;margin:0 0 18px;font-size:15px;color:var(--ink-2)}
+.how b,.so b{color:var(--ink)}
+.so{border-left:3px solid var(--brass);padding:2px 0 2px 16px;margin:20px 0 0}
+.so p{margin:0 0 8px}
+.panel .kpi{background:var(--page);border:0}
+.note{color:var(--muted);font-size:13px;margin:6px 0 0}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:8px;vertical-align:middle}
+.eq{font-family:"DM Serif Display",Georgia,serif;font-size:21px;margin:0 0 6px}
+.stack{display:flex;height:48px;border-radius:8px;overflow:hidden;gap:2px;margin:10px 0 6px}
+.stack div{display:flex;align-items:center;justify-content:center;color:var(--on-color);font-weight:700;font-size:15px;min-width:0;white-space:nowrap}
 .ctl{margin:14px 0 6px}
-.ctl label{display:flex;justify-content:space-between;gap:10px;font-weight:600}
+.ctl label{display:flex;justify-content:space-between;gap:10px;font-weight:700}
 .ctl output{color:var(--tips);font-variant-numeric:tabular-nums}
-input[type=range]{width:100%;height:44px;margin:0;accent-color:var(--tips);touch-action:pan-y}
-.tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
-.tile{background:var(--soft);border-radius:10px;padding:10px 12px}
-.tile .v{font-size:1.45rem;font-weight:700;font-variant-numeric:tabular-nums}
-.tile .l{font-size:.82rem;color:var(--ink2)}
-.pos{color:var(--good)}.neg{color:var(--bad)}
-.verdict{border-left:4px solid var(--tips);padding:8px 12px;background:var(--soft);border-radius:0 8px 8px 0;margin:10px 0 4px;min-height:3.2em}
-svg{display:block;width:100%;height:auto}
-svg text{fill:var(--ink2);font-family:inherit}
-.legend{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:6px;font-size:.9rem}
-.legend span{display:flex;align-items:center;gap:6px;min-height:28px}
-.legend i{width:22px;height:0;border-top:3px solid}
+input[type=range]{display:block;width:100%;height:44px;margin:0;accent-color:var(--tips);touch-action:pan-y;cursor:pointer}
+.verdict{border-left:3px solid var(--tips);background:var(--page);padding:10px 14px;border-radius:0 10px 10px 0;margin:12px 0;min-height:3.2em;font-size:15px}
+.chart{width:100%;margin-top:8px}
+.chart svg{display:block;width:100%;height:auto}
+.chart svg text{fill:var(--muted);font-family:inherit}
+.legend{display:flex;flex-wrap:wrap;gap:4px 22px;margin:6px 0 0;font-size:14px;color:var(--ink-2)}
+.legend span{display:flex;align-items:center;gap:8px;min-height:28px}
+.legend i{width:24px;height:0;border-top:3px solid}
 .bars{margin:8px 0}
-.bar{display:grid;grid-template-columns:96px 1fr 76px;align-items:center;gap:8px;margin:8px 0;font-size:.92rem}
-.bar .track{background:var(--soft);border-radius:6px;height:22px;position:relative;overflow:hidden}
+.bar{display:grid;grid-template-columns:140px 1fr 76px;align-items:center;gap:10px;margin:10px 0;font-size:15px}
+.bar .track{background:var(--page);border-radius:6px;height:22px;position:relative;overflow:hidden}
 .bar .fill{position:absolute;left:0;top:0;bottom:0;border-radius:0 4px 4px 0}
-.bar .val{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
-footer{color:var(--muted);font-size:.85rem;margin-top:24px}
-a.back{display:inline-flex;align-items:center;min-height:44px;color:var(--bond)}
+.bar .val{text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
+.gloss{display:grid;grid-template-columns:1fr 1fr;gap:14px 28px;margin:24px 0 0;padding-top:20px;border-top:1px solid var(--grid)}
+.gloss div{margin:0}
+.gloss dt{font-weight:700}
+.gloss dd{margin:2px 0 0;color:var(--ink-2);font-size:15px}
+.take{margin:0;padding-left:1.2rem}
+.take li{margin:0 0 12px}
+.take li::marker{color:var(--brass)}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;max-width:640px;font-variant-numeric:tabular-nums;font-size:15px}
+td{padding:9px 10px;border-bottom:1px solid var(--grid);text-align:right;white-space:nowrap}
+td:first-child{text-align:left;position:sticky;left:0;background:var(--surface);padding-left:0}
+tr.sum td{font-weight:700}
+.refs{margin:28px 0 0;padding:0 4px;color:var(--muted);font-size:13px;line-height:1.45}
+.refs .refs-h{margin:0 0 2px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;font-size:12px}
+.refs ul{list-style:none;padding:0;margin:0}
+.refs a{display:flex;align-items:center;min-height:44px;padding:4px 0;color:var(--ink-2);text-decoration:underline;
+  text-decoration-color:var(--axis);text-underline-offset:3px}
+.refs a:hover{color:var(--ink);text-decoration-color:currentColor}
+.refs b{font-weight:700}
+.refs .refs-note{margin:6px 0 0}
+footer{margin-top:40px;background:var(--band);color:var(--band-ink);font-size:13px}
+footer .in{padding-top:20px;padding-bottom:20px}
+@media (max-width:720px){.kpis{grid-template-columns:1fr 1fr;gap:10px}.panel{padding:20px 16px}.band{padding-bottom:84px}h2{font-size:24px}}
 @media (max-width:640px){
-h1{font-size:1.45rem}
-.def,.tiles{grid-template-columns:1fr}
-th,td{white-space:normal}
-th:first-child,td:first-child{position:static}
-td:last-child{white-space:nowrap}
-.bar{grid-template-columns:1fr 70px;grid-template-areas:"name val" "track track"}
-.bar .nm{grid-area:name}.bar .track{grid-area:track}.bar .val{grid-area:val}
+  .gloss{grid-template-columns:1fr;gap:18px}
+  .kpi{padding:14px}.kpi b{font-size:26px}
+  .legend{flex-direction:column;gap:0}
+  td{padding:8px 4px;white-space:normal}td:first-child{position:static}td:last-child{white-space:nowrap}
+  .bar{grid-template-columns:1fr 70px;grid-template-areas:"name val" "track track";gap:4px 10px}
+  .bar .nm{grid-area:name}.bar .track{grid-area:track}.bar .val{grid-area:val}
 }
 </style>
 </head>
 <body>
-<main>
-<a class="back" href="../index.html">&larr; Macro-Quant-Lab</a>
-<h1>Real yields: the quiet driver of bonds and gold</h1>
-<p class="lead">A bond is a promise of future money. Gold is a metal that promises nothing. Both prices are pulled around by one number: the <b>real yield</b>, the interest you earn <i>after</i> inflation has taken its cut.</p>
-<p><span class="tag" id="asof"></span> <span class="tag">All worked examples are illustrative</span></p>
-
-<section id="s1">
-<h2>1. Three yields, one identity</h2>
-<div class="def">
-<div><span class="t">Nominal yield</span>The interest a normal Treasury pays, in dollars, ignoring inflation.</div>
-<div><span class="t">Real yield</span>The interest after inflation. Markets read it from <b>TIPS</b> (Treasury Inflation-Protected Securities).</div>
-<div><span class="t">Expected inflation (breakeven)</span>What the market expects inflation to average. It is the nominal yield minus the TIPS yield.</div>
-<div><span class="t">CPI</span>Consumer Price Index: the measured rise in prices over the past year. That is <i>actual</i> inflation, not the expectation.</div>
-</div>
-<p class="eq">Nominal yield &asymp; Real yield + Expected inflation</p>
-<div class="stack" id="stack" role="img" aria-label="Nominal yield split into real yield and expected inflation"></div>
-<p class="note" id="stacknote"></p>
-</section>
-
-<section id="s2">
-<h2>2. How a TIPS adjusts with CPI</h2>
-<p>A TIPS pays a <b>fixed real coupon</b>, but on a principal that is re-scaled by CPI. If prices rise, the principal rises, and so does the coupon in dollars. That locks in the real return.</p>
-<div class="scroll"><table id="tipstable"></table></div>
-<p class="note">Illustrative: $1,000 bought at par with a 2.65% real coupon, held one year while CPI runs at the reference rate.</p>
-</section>
-
-<section id="s3">
-<h2>3. Slider 1: plain bond or TIPS, depending on actual inflation</h2>
-<p>A plain bond's yield is fixed in dollars, so higher inflation eats its real return. A TIPS keeps its real yield. Move the slider to change <b>actual</b> inflation over the next year.</p>
-<div class="ctl"><label for="infl">Actual inflation <output id="inflout"></output></label>
-<input id="infl" type="range" min="0" max="8" step="0.1" value="3.7"></div>
-<div class="tiles">
-<div class="tile"><div class="v" id="bondreal"></div><div class="l">Plain bond, real return</div></div>
-<div class="tile"><div class="v" id="tipsreal"></div><div class="l">TIPS, real return</div></div>
-</div>
-<div class="verdict" id="verdict1"></div>
-<div id="chart1"></div>
-<div class="legend"><span><i style="border-color:var(--bond)"></i>Plain bond (5.1% nominal)</span><span><i style="border-color:var(--tips);border-top-style:dashed"></i>TIPS (2.65% real, plus CPI)</span></div>
-<p class="note">Why the crossover is not exactly 2.3%: 5.1% &minus; 2.65% = 2.45%, a touch above the quoted 2.3% breakeven. Quoted yields come from different markets and rounding, so a small gap is normal. Real returns here use the exact formula (1+nominal) / (1+inflation) &minus; 1.</p>
-</section>
-
-<section id="s4">
-<h2>4. Why gold competes with real yields</h2>
-<p>Gold pays no coupon and no dividend. Holding it means giving up the real yield you could have earned on a TIPS. The higher that real yield, the more expensive it is to hold gold, so buyers demand a better reason, and the gold price tends to come under pressure. When real yields fall toward zero or below, that cost vanishes and gold becomes easier to hold.</p>
-<p class="note"><b>Opportunity cost</b> = the best alternative you gave up. Here: the real yield on a TIPS.</p>
-<div class="ctl"><label for="ry">Real yield (10-year TIPS) <output id="ryout"></output></label>
-<input id="ry" type="range" min="-1" max="4" step="0.05" value="2.65"></div>
-<div class="bars" id="bars"></div>
-<div class="verdict" id="verdict2"></div>
-<p class="note">Real yields are the <i>main</i> story, not the only one. The US dollar, central-bank buying and fear in markets also move gold, and the link between gold and real yields has been loose in some years. Treat this as a mental model, not a forecast.</p>
-</section>
-
-<footer>Illustrative learning page, not investment advice. Reference values for <span id="asof2"></span>: US 10-year nominal about 5.1%, 10-year TIPS about 2.65%, 10-year breakeven about 2.3%, US CPI 3.7%. Generated by tips_gold_bonds.py; no external data or libraries.</footer>
+<header class="band"><div class="in">
+<a class="back" href="../index.html">&larr; Macro Quant Lab</a>
+<p class="eyebrow">Real yields · TIPS · Gold</p>
+<h1>What quietly drives bonds and gold?</h1>
+<p class="answer"><b>The real yield.</b> A bond is a promise of future money. Gold is a metal that promises nothing. Both prices are pulled around by one number: the <b>real yield</b>, the interest you earn <i>after</i> inflation has taken its cut. With the 10-year TIPS at 2.65%, holding $1,000 of gold instead gives up about $26.50 a year of real income.</p>
+<p class="meta">Reference values for October 2026, typed in by hand (nothing downloaded) · All worked examples are illustrative · Not investment advice</p>
+</div></header>
+<main class="in">
+<div class="kpis top"><div class="kpi"><b><i class="dot" style="background:var(--bond)"></i>5.1%</b><span>10-year Treasury yield (nominal)</span></div><div class="kpi"><b><i class="dot" style="background:var(--tips)"></i>2.65%</b><span>10-year TIPS yield (real)</span></div><div class="kpi"><b>2.3%</b><span>10-year breakeven (expected inflation)</span></div><div class="kpi"><b>3.7%</b><span>US CPI inflation, past year</span></div></div>
+<section class="panel"><p class="tag">01</p><h2>What is a real yield?</h2><p class="dek">Nominal yield &asymp; real yield + expected inflation: 5.1% &asymp; 2.65% + 2.3%.</p><p class="how"><b>How to read it.</b> The bar is the 10-year nominal yield split into its two parts, drawn to scale: the real yield read from TIPS (orange) and the inflation the market expects, the breakeven (blue). Below it, the four terms the page is built on.</p><p class="eq">Nominal yield &asymp; Real yield + Expected inflation</p><div class="stack" role="img" aria-label="Nominal yield split into real yield and expected inflation"><div style="flex:2.65;background:var(--tips)">Real 2.65%</div><div style="flex:2.3;background:var(--bond)">Inflation 2.3%</div></div><dl class="gloss"><div><dt>Nominal yield</dt><dd>The interest a normal Treasury pays, in dollars, ignoring inflation.</dd></div><div><dt>Real yield</dt><dd>The interest after inflation. Markets read it from TIPS (Treasury Inflation-Protected Securities).</dd></div><div><dt>Expected inflation (breakeven)</dt><dd>What the market expects inflation to average. It is the nominal yield minus the TIPS yield.</dd></div><div><dt>CPI</dt><dd>Consumer Price Index: the measured rise in prices over the past year. That is actual inflation, not the expectation.</dd></div></dl><div class="so"><p>Reference (October 2026): nominal 5.1% vs real 2.65% + breakeven 2.3% = 4.95% (rounding gap 0.15 points). Realised CPI is 3.7%, above the 2.3% the market expects.</p></div></section><section class="panel"><p class="tag">02</p><h2>How does a TIPS keep up with inflation?</h2><p class="dek">$1,000 becomes $1,037.00, plus a $27.48 coupon: 6.45% in dollars, 2.65% after inflation.</p><p class="how"><b>How to read it.</b> A TIPS pays a <b>fixed real coupon</b>, but on a principal that is re-scaled by CPI. Read the table top to bottom: one year of a TIPS, first the CPI adjustment, then the coupon paid on the new, larger principal.</p><div class="scroll"><table><tbody><tr><td>Starting principal</td><td>$1,000.00</td></tr><tr><td>CPI adjusts it to (3.7%)</td><td>$1,037.00</td></tr><tr><td>+ Inflation gain</td><td>$37.00</td></tr><tr><td>+ Coupon (2.65% of new principal)</td><td>$27.48</td></tr><tr class=sum><td>= Dollars earned</td><td>$64.48</td></tr><tr><td>Nominal return</td><td>6.45%</td></tr><tr class=sum><td>Real return (after 3.7% inflation)</td><td>2.65%</td></tr></tbody></table></div><p class="note">Illustrative: $1,000 bought at par with a 2.65% real coupon, held one year while CPI runs at the reference rate.</p><div class="so"><p>If prices rise, the principal rises, and so does the coupon in dollars. That locks in the real return.</p></div></section><section class="panel"><p class="tag">03</p><h2>When does a TIPS beat a plain bond?</h2><p class="dek">It depends on actual inflation: above 2.39% the TIPS wins, below it the plain bond does.</p><p class="how"><b>How to read it.</b> A plain bond's yield is fixed in dollars, so higher inflation eats its real return. A TIPS keeps its real yield. Move the slider to change <b>actual</b> inflation over the next year. In the chart, the solid blue line is the plain bond's real return, the dashed orange line the TIPS; the dots follow the slider and the dotted line marks where they are equal.</p><div class="ctl"><label for="infl">Actual inflation <output id="inflout"></output></label><input id="infl" type="range" min="0" max="8" step="0.1" value="3.7"></div><div class="kpis two"><div class="kpi"><b id="bondreal"></b><span>Plain bond, real return</span></div><div class="kpi"><b id="tipsreal"></b><span>TIPS, real return</span></div></div><div class="verdict" id="verdict1" aria-live="polite"></div><div id="chart1" class="chart"></div><div class="legend"><span><i style="border-color:var(--bond)"></i>Plain bond (5.1% nominal)</span><span><i style="border-color:var(--tips);border-top-style:dashed"></i>TIPS (2.65% real, plus CPI)</span></div><div class="so"><p>Why the crossover is not exactly 2.3%: 5.1% &minus; 2.65% = 2.45%, a touch above the quoted 2.3% breakeven. Quoted yields come from different markets and rounding, so a small gap is normal. Real returns here use the exact formula (1+nominal) / (1+inflation) &minus; 1.</p></div></section><section class="panel"><p class="tag">04</p><h2>Why does gold compete with real yields?</h2><p class="dek">At a 2.65% real yield, $1,000 of gold gives up about $26.50 a year versus TIPS.</p><p class="how"><b>How to read it.</b> Move the slider to set the 10-year TIPS real yield. The bars compare one year of real income from $1,000 in TIPS and in gold (which pays none); the box below turns the gap into dollars.</p><p>Gold pays no coupon and no dividend. Holding it means giving up the real yield you could have earned on a TIPS. The higher that real yield, the more expensive it is to hold gold, so buyers demand a better reason, and the gold price tends to come under pressure. When real yields fall toward zero or below, that cost vanishes and gold becomes easier to hold.</p><p class="note"><b>Opportunity cost</b> = the best alternative you gave up. Here: the real yield on a TIPS.</p><div class="ctl"><label for="ry">Real yield (10-year TIPS) <output id="ryout"></output></label><input id="ry" type="range" min="-1" max="4" step="0.05" value="2.65"></div><div class="bars" id="bars"></div><div class="verdict" id="verdict2" aria-live="polite"></div><div class="so"><p>Real yields are the <i>main</i> story, not the only one. The US dollar, central-bank buying and fear in markets also move gold, and the link between gold and real yields has been loose in some years. Treat this as a mental model, not a forecast.</p></div></section><section class="panel"><p class="tag">05</p><h2>What did we learn?</h2><p class="dek">Five takeaways.</p><ol class="take"><li><b>Nominal yield &asymp; real yield + expected inflation.</b> In October 2026: 5.1% &asymp; 2.65% + 2.3%, with a gap of 0.15 points because quoted yields come from different markets and rounding.</li><li><b>A TIPS locks in the real return.</b> CPI re-scales the principal, so $1,000 earned $64.48 in a year at 3.7% CPI: 6.45% in dollars, 2.65% after inflation.</li><li><b>Plain bond or TIPS is a bet on inflation.</b> Both give the same real return at 2.39% actual inflation. If inflation stays at 3.7% CPI, the TIPS wins: the plain bond earns 1.35% real, the TIPS 2.65%.</li><li><b>For gold, the real yield is an opportunity cost.</b> Gold pays no coupon, so at a 2.65% real yield $1,000 of gold gives up about $26.50 a year. When real yields fall toward zero or below, that cost vanishes and gold becomes easier to hold.</li><li><b>Limits.</b> The reference values are typed in by hand for October 2026, not downloaded, and every worked example is illustrative. Real yields are the main story for gold, not the only one: the US dollar, central-bank buying and fear in markets also move it, and the link has been loose in some years. A mental model, not a forecast.</li></ol></section><aside class="refs" aria-label="References"><p class="refs-h">References</p><ul><li><a href="https://fred.stlouisfed.org/series/DGS10" target="_blank" rel="noopener"><span><b>FRED</b> · 10-year Treasury yield, nominal (DGS10)</span></a></li><li><a href="https://fred.stlouisfed.org/series/DFII10" target="_blank" rel="noopener"><span><b>FRED</b> · 10-year TIPS yield, real (DFII10)</span></a></li><li><a href="https://fred.stlouisfed.org/series/T10YIE" target="_blank" rel="noopener"><span><b>FRED</b> · 10-year breakeven inflation (T10YIE)</span></a></li><li><a href="https://www.bls.gov/cpi/" target="_blank" rel="noopener"><span><b>BLS</b> · Consumer Price Index, actual inflation (CPI)</span></a></li><li><a href="https://www.treasurydirect.gov/marketable-securities/tips/" target="_blank" rel="noopener"><span><b>TreasuryDirect</b> · how TIPS work</span></a></li></ul><p class="refs-note">The values on this page are reference values for October 2026, typed into the script by hand (nothing is downloaded).</p></aside>
 </main>
-
+<footer><div class="in">Illustrative learning page, not investment advice. Reference values for October 2026: US 10-year nominal about
+5.1%, 10-year TIPS about 2.65%, 10-year breakeven about 2.3%, US CPI 3.7%. Generated by
+tips_gold_bonds.py; no data download and no chart library.</div></footer>
 <script>
 // numbers computed in Python and pasted in here
-const M = {"asOf": "October 2026", "nominal": 5.1, "real": 2.65, "breakeven": 2.3, "cpi": 3.7, "amount": 1000, "gap": 0.15, "crossover": 2.39, "tipsExample": {"principal": 1000, "new_principal": 1037.0, "inflation_gain": 37.0, "coupon": 27.48, "total_dollars": 64.48, "nominal_pct": 6.45, "real_pct": 2.65}};
-// shortcuts to find elements by id, and a money/percent formatter
+const M = {"asOf": "October 2026", "nominal": 5.1, "real": 2.65, "breakeven": 2.3, "cpi": 3.7, "amount": 1000, "gap": 0.15, "crossover": 2.39, "tipsExample": {"principal": 1000, "new_principal": 1037.0, "inflation_gain": 37.0, "coupon": 27.48, "total_dollars": 64.48, "nominal_pct": 6.45, "real_pct": 2.65}, "nomMinusReal": 2.45, "bondRealAtCpi": 1.35, "goldCostYear": 26.5};
+// shortcuts to find elements by id, and a money/percent formatter with a real minus sign
 const $ = id => document.getElementById(id);
-const pct = (x, d = 2) => (x >= 0 ? "" : "−") + Math.abs(x).toFixed(d) + "%";
-const usd = x => (x < 0 ? "−$" : "$") + Math.abs(x).toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2});
-// the same two return formulas as the Python file, so the sliders match the worked numbers
+const pct = (x, d = 2) => (x >= 0 ? "" : "\u2212") + Math.abs(x).toFixed(d) + "%";
+const usd = x => (x < 0 ? "\u2212$" : "$") + Math.abs(x).toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2});
+// the same return formula as the Python file, so the sliders match the worked numbers
 const realRet = (n, i) => ((1 + n / 100) / (1 + i / 100) - 1) * 100;
 // phone layout flag (<=640px), re-read whenever the chart is drawn
-const phone = () => window.matchMedia("(max-width: 640px)").matches;
+const narrowMQ = window.matchMedia("(max-width: 640px)");
 
-// ---- header tags ----
-$("asof").textContent = "Reference values: " + M.asOf;
-$("asof2").textContent = M.asOf;
-
-// ---- section 1: stacked bar nominal = real + breakeven ----
-(function () {
-  const total = M.real + M.breakeven;                     // bar is as wide as the two parts together
-  $("stack").innerHTML =
-    '<div style="flex:' + M.real + ';background:var(--tips)">Real ' + M.real + '%</div>' +
-    '<div style="flex:' + M.breakeven + ';background:var(--bond)">Inflation ' + M.breakeven + '%</div>';
-  $("stacknote").textContent = "Reference (" + M.asOf + "): nominal " + M.nominal + "% vs real " + M.real + "% + breakeven " +
-    M.breakeven + "% = " + total.toFixed(2) + "% (rounding gap " + M.gap + " points). Realised CPI is " + M.cpi +
-    "%, above the " + M.breakeven + "% the market expects.";
-})();
-
-// ---- section 2: TIPS worked example table ----
-(function () {
-  const e = M.tipsExample;
-  const rows = [
-    ["Starting principal", usd(e.principal)],
-    ["CPI adjusts it to (" + M.cpi + "%)", usd(e.new_principal)],
-    ["+ Inflation gain", usd(e.inflation_gain)],
-    ["+ Coupon (" + M.real + "% of new principal)", usd(e.coupon)],
-    ["= Dollars earned", usd(e.total_dollars)],
-    ["Nominal return", pct(e.nominal_pct)],
-    ["Real return (after " + M.cpi + "% inflation)", pct(e.real_pct)]
-  ];
-  $("tipstable").innerHTML = "<tbody>" + rows.map(r => "<tr><td>" + r[0] + "</td><td>" + r[1] + "</td></tr>").join("") + "</tbody>";
-})();
-
-// ---- section 3: slider 1 and line chart ----
+// ---- panel 3: line chart of real return against actual inflation ----
 function drawChart1() {
   const infl = parseFloat($("infl").value);                // current slider value, %
-  const small = phone();                                   // phone gets a taller, simpler chart
-  const W = small ? 290 : 720, H = small ? 330 : 340;      // SVG units; phone is ~1:1 with pixels so text stays readable
-  const L = small ? 42 : 54, R = 20, T = 16, B = 40;       // margins: room for axis labels
-  const xmax = 8, ymin = -4, ymax = 6;                     // axes: inflation 0-8%, real return -4..+6% (bond starts at 5.1%)
+  const small = narrowMQ.matches;                          // phone gets a taller, simpler chart
+  const W = Math.max(240, $("chart1").clientWidth || 720); // draw at the box's real width, so 1 SVG unit = 1 pixel
+  const H = small ? 340 : 360;                             // the chart box is taller than wide on a phone
+  const L = small ? 42 : 54, R = small ? 12 : 20, T = 16, B = 44;   // margins: room for axis labels
+  const xmax = 8, ymin = -4, ymax = 6;                     // axes: inflation 0-8%, real return -4..+6% (bond starts at the nominal yield)
   const X = v => L + (v / xmax) * (W - L - R);             // data -> pixel (x)
   const Y = v => T + (1 - (v - ymin) / (ymax - ymin)) * (H - T - B);   // data -> pixel (y)
-  let s = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Real return of a plain bond and a TIPS against actual inflation">';
+  let s = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" role="img" aria-label="Real return of a plain bond and a TIPS against actual inflation">';
   for (let g = ymin; g <= ymax; g += 2) {                  // horizontal grid + y labels
-    s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(g) + '" y2="' + Y(g) + '" stroke="var(--line)" stroke-width="' + (g === 0 ? 1.5 : 1) + '"/>';
-    s += '<text x="' + (L - 8) + '" y="' + (Y(g) + 4) + '" text-anchor="end" font-size="13">' + g + '%</text>';
+    s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(g) + '" y2="' + Y(g) + '" stroke="var(' + (g === 0 ? "--axis" : "--grid") + ')" stroke-width="' + (g === 0 ? 1.5 : 1) + '"/>';
+    s += '<text x="' + (L - 8) + '" y="' + (Y(g) + 4) + '" text-anchor="end" font-size="13">' + (g < 0 ? "\u2212" + (-g) : g) + '%</text>';
   }
   for (let g = 0; g <= xmax; g += 2) {                     // x labels (first and last stay inside the box)
-    s += '<text x="' + X(g) + '" y="' + (H - 16) + '" text-anchor="' + (g === 0 ? "start" : g === xmax ? "end" : "middle") + '" font-size="13">' + g + '%</text>';
+    s += '<text x="' + X(g) + '" y="' + (H - 22) + '" text-anchor="' + (g === 0 ? "start" : g === xmax ? "end" : "middle") + '" font-size="13">' + g + '%</text>';
   }
-  s += '<text x="' + ((L + W - R) / 2) + '" y="' + (H - 1) + '" text-anchor="middle" font-size="12">Actual inflation</text>';
+  s += '<text x="' + ((L + W - R) / 2) + '" y="' + (H - 4) + '" text-anchor="middle" font-size="13">Actual inflation</text>';
   // plain bond line (solid) sampled every 0.1%
   let pb = "";
   for (let i = 0; i <= xmax + 1e-9; i += 0.1) pb += (pb ? "L" : "M") + X(i).toFixed(1) + " " + Y(realRet(M.nominal, i)).toFixed(1);
   s += '<path d="' + pb + '" fill="none" stroke="var(--bond)" stroke-width="2.5"/>';
   // TIPS line (dashed): real return stays at the real yield
   s += '<line x1="' + X(0) + '" x2="' + X(xmax) + '" y1="' + Y(M.real) + '" y2="' + Y(M.real) + '" stroke="var(--tips)" stroke-width="2.5" stroke-dasharray="7 5"/>';
-  // crossover marker
+  // crossover marker: a dotted vertical line and its label
   s += '<line x1="' + X(M.crossover) + '" x2="' + X(M.crossover) + '" y1="' + T + '" y2="' + (H - B) + '" stroke="var(--muted)" stroke-dasharray="2 4"/>';
-  s += '<text x="' + (X(M.crossover) + 6) + '" y="' + (T + 24) + '" font-size="12">equal at ' + M.crossover + '%</text>';
+  s += '<text x="' + (X(M.crossover) + 6) + '" y="' + (T + 24) + '" font-size="13">equal at ' + M.crossover + '%</text>';
   // current slider position: ring dots on each line
-  s += '<circle cx="' + X(infl) + '" cy="' + Y(realRet(M.nominal, infl)) + '" r="6" fill="var(--bond)" stroke="var(--card)" stroke-width="2"/>';
-  s += '<circle cx="' + X(infl) + '" cy="' + Y(M.real) + '" r="6" fill="var(--tips)" stroke="var(--card)" stroke-width="2"/>';
+  s += '<circle cx="' + X(infl) + '" cy="' + Y(realRet(M.nominal, infl)) + '" r="6" fill="var(--bond)" stroke="var(--surface)" stroke-width="2"/>';
+  s += '<circle cx="' + X(infl) + '" cy="' + Y(M.real) + '" r="6" fill="var(--tips)" stroke="var(--surface)" stroke-width="2"/>';
   $("chart1").innerHTML = s + "</svg>";
 }
 function update1() {
@@ -200,9 +162,9 @@ function update1() {
   const b = realRet(M.nominal, infl), t = M.real;          // real returns: plain bond falls, TIPS stays put
   $("inflout").textContent = pct(infl, 1);
   $("bondreal").textContent = pct(b);
-  $("bondreal").className = "v " + (b >= 0 ? "pos" : "neg");
+  $("bondreal").className = b >= 0 ? "pos" : "neg";
   $("tipsreal").textContent = pct(t);
-  $("tipsreal").className = "v pos";
+  $("tipsreal").className = t >= 0 ? "pos" : "neg";
   const diff = Math.abs(t - b).toFixed(2);
   $("verdict1").textContent = infl > M.crossover
     ? "Inflation is above the crossover (" + M.crossover + "%): the TIPS wins by " + diff + " points. The plain bond's fixed dollars buy less than expected."
@@ -213,7 +175,7 @@ function update1() {
 }
 $("infl").addEventListener("input", update1);
 
-// ---- section 4: slider 2 and opportunity-cost bars ----
+// ---- panel 4: slider 2 and opportunity-cost bars ----
 function update2() {
   const r = parseFloat($("ry").value);                     // real yield chosen on the slider, %
   const A = M.amount;                                      // $1,000 example
@@ -236,9 +198,11 @@ function update2() {
 }
 $("ry").addEventListener("input", update2);
 
-// ---- start up, and redraw the chart when the phone is rotated across the 640px line ----
+// ---- start up, and redraw the chart when the phone is rotated across the 640px line or the window is resized ----
 update1(); update2();
-window.matchMedia("(max-width: 640px)").addEventListener("change", drawChart1);
+narrowMQ.addEventListener("change", drawChart1);
+let lastW = 0;                                             // only redraw when the width really changed (phones fire resize on scroll)
+window.addEventListener("resize", () => { const w = $("chart1").clientWidth; if (w !== lastW) { lastW = w; drawChart1(); } });
 </script>
 </body>
 </html>

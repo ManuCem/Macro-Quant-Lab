@@ -105,6 +105,7 @@ def fetch_json(url, cache_file, params=None):
     """Download a JSON answer, or read it from the cache if we already downloaded it."""
     cache_path = CACHE_DIR / cache_file                       # where this answer is (or will be) saved
     if cache_path.exists():                                   # already downloaded on an earlier run?
+        # returns the saved answer, the same Python objects as the download below (e.g. a dict with a "data" list)
         return json.loads(cache_path.read_text(encoding="utf-8"))  # yes: read it from disk, no internet needed
     for attempt in range(1, 7):                               # try up to 6 times
         time.sleep(SECONDS_BETWEEN_CALLS)                     # pause first, so we never call the API too fast
@@ -326,9 +327,15 @@ def build_country_table(flows, codes, capitals, map_names):
 
 
 def summarise(table):
-    """Headline numbers: total surplus, total deficit, and how far the world is from adding up to zero."""
+    """Headline numbers: total surplus, total deficit, how far the world is from adding up to zero, and the two extremes."""
     surplus = table[table["balance_bn"] > 0]                  # countries in surplus
     deficit = table[table["balance_bn"] < 0]                  # countries in deficit
+    top_surplus = table.iloc[-1]                              # the table is sorted by balance: the last row is the biggest surplus
+    top_deficit = table.iloc[0]                               # ...and the first row the biggest deficit
+    buyer_iso, buyer_bn = top_surplus["top_exports"][0]       # who buys most from the biggest surplus country, e.g. ("USA", 525.6)
+    seller_iso, seller_bn = top_deficit["top_imports"][0]     # who sells most to the biggest deficit country, e.g. ("MEX", 510.0)
+    mirror = table[table["source"] == "mirror"]               # the countries estimated from their partners' data
+    mirror_size = (mirror["exports_bn"] + mirror["imports_bn"]).sort_values(ascending=False)  # their total trade, biggest first
     summary = {
         "year": YEAR,                                         # the data year (float() below turns numpy numbers into plain Python ones)
         "surplus_total_bn": round(float(surplus["balance_bn"].sum()), 1),   # sum of all surpluses
@@ -337,10 +344,23 @@ def summarise(table):
         "deficit_count": len(deficit),
         "net_bn": round(float(table["balance_bn"].sum()), 1),        # in theory ~0 (one country's export is another's import)
         "mirror_count": int((table["source"] == "mirror").sum()),    # how many countries are estimates
+        "country_count": len(table),                          # how many countries are on the map
+        "mirror_examples": [table.loc[i, "name"] for i in mirror_size.index[:4]],  # the 4 biggest traders among the estimates
+        "top_surplus_name": top_surplus["name"],              # the country with the biggest surplus
+        "top_surplus_bn": round(float(top_surplus["balance_bn"]), 1),
+        "top_surplus_buyer": table["name"].get(buyer_iso, buyer_iso),   # its #1 buyer, by name (ISO3 if not on the map)
+        "top_surplus_buyer_bn": round(float(buyer_bn), 1),
+        "top_deficit_name": top_deficit["name"],              # the country with the biggest deficit
+        "top_deficit_bn": round(float(top_deficit["balance_bn"]), 1),
+        "top_deficit_seller": table["name"].get(seller_iso, seller_iso),  # its #1 seller, by name
+        "top_deficit_seller_bn": round(float(seller_bn), 1),
     }
-    # returns a dict, e.g.:
-    # {"year": 2024, "surplus_total_bn": 2650.3, "surplus_count": 64,
-    #  "deficit_total_bn": -3120.8, "deficit_count": 146, "net_bn": -470.5, "mirror_count": 62}
+    # returns a dict with 18 items, e.g.:
+    # {"year": 2024, "surplus_total_bn": 2846.2, "surplus_count": 66,
+    #  "deficit_total_bn": -3042.7, "deficit_count": 156, "net_bn": -196.5, "mirror_count": 74, "country_count": 222,
+    #  "mirror_examples": ["Russia", "Vietnam", "United Arab Emirates", "Iran"],
+    #  "top_surplus_name": "China", "top_surplus_bn": 991.4, "top_surplus_buyer": "United States", "top_surplus_buyer_bn": 525.6,
+    #  "top_deficit_name": "United States", "top_deficit_bn": -1293.0, "top_deficit_seller": "Mexico", "top_deficit_seller_bn": 510.0}
     return summary
 
 
@@ -378,348 +398,271 @@ def main():
 # html / chart code
 # ===========================================================================
 
-def page_data(table, summary):
-    """Shrink the country table into the small JSON object the browser reads."""
-    countries = {}                                            # iso3 -> short dict (short keys keep the page small)
-    for iso3, row in table.iterrows():                        # one country at a time
-        has_capital = pd.notna(row["lat"])                    # do we know where its capital is?
-        countries[iso3] = {
-            "n": row["name"],                                 # name
-            "c": row["capital"],                              # capital name
-            "ll": [round(row["lon"], 3), round(row["lat"], 3)] if has_capital else None,  # [lon, lat]: D3 wants longitude first
-            "x": round(row["exports_bn"], 3),                 # exports, $ bn
-            "m": round(row["imports_bn"], 3),                 # imports, $ bn
-            "b": round(row["balance_bn"], 3),                 # balance, $ bn
-            "s": row["source"][0],                            # "r" = reported, "m" = mirror estimate
-            "tx": [[p, round(v, 3)] for p, v in row["top_exports"]],  # top 10 export destinations
-            "tm": [[p, round(v, 3)] for p, v in row["top_imports"]],  # top 10 import sources
-        }
-    by_map_id = {row["map_id"]: iso3 for iso3, row in table.iterrows()}  # map shape id -> iso3, to colour each shape
-    by_map_id.update(MAP_ALIASES)                             # Puerto Rico -> USA, Monaco -> FRA...
-    data = {"summary": summary, "countries": countries, "byMapId": by_map_id, "aliasIds": list(MAP_ALIASES)}
-    # returns a dict ready for json.dumps, e.g.:
-    # {"summary": {"year": 2024, "surplus_total_bn": 2650.3, ...},
-    #  "countries": {"ESP": {"n": "Spain", "c": "Madrid", "ll": [-3.703, 40.417], "x": 412.3, "m": 470.1,
-    #                        "b": -57.8, "s": "r", "tx": [["FRA", 64.1], ...], "tm": [["DEU", 51.2], ...]}, ...},
-    #  "byMapId": {"724": "ESP", "840": "USA", "630": "USA", ...}, "aliasIds": ["630", "850", "492", "438"]}
-    return data
+FONTS_URL = "https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;700&display=swap"
 
+# Look: the "Lab" design every project page uses (see CLAUDE.md): green header band, brass accents, white panels,
+# the same fonts as the homepage. The map keeps its own colour meaning: blue = surplus, red = deficit (5 steps each),
+# and, once a country is picked, green = its buyers and purple = its sellers. Text always names the side in words too.
+CSS = r"""
+:root{color-scheme:light dark;--band:#2b2257;--band-ink:#e4e6ea;--brass:#8571e0;--page:#f6f5f2;--surface:#fff;--ink:#16181d;--ink-2:#555a63;
+  --muted:#868b94;--grid:#e4e2dc;--axis:#c9c7c0;
+  --sea:#f6f3ec;--land-off:#e3ded1;                                   /* the sea, and countries of the other side or without data */
+  --neg-0:#fbd0cc;--neg-1:#f4a19b;--neg-2:#e5605c;--neg-3:#bf3534;--neg-4:#87201f;   /* deficit: step 0 = smallest, 4 = largest */
+  --pos-0:#cde2fb;--pos-1:#9ec5f4;--pos-2:#5598e7;--pos-3:#256abf;--pos-4:#104281;   /* surplus */
+  --arrow:#16181d;--sel-fill:#555a63;                                 /* arrows, and the picked country itself */
+  --exp-0:#9ad8b6;--exp-1:#4cb584;--exp-2:#1f7f55;                    /* green: countries that BUY its goods (#3, #2, #1) */
+  --imp-0:#c9b3f0;--imp-1:#9a74de;--imp-2:#6236bd}                    /* purple: countries that SELL to it */
+@media (prefers-color-scheme:dark){:root{--band:#1d173d;--brass:#ad9cf5;--page:#0f1012;--surface:#18191d;--ink:#ececee;--ink-2:#aaadb5;
+  --muted:#80848c;--grid:#2a2c31;--axis:#3f4248;
+  --sea:#0f1513;--land-off:#28342e;
+  --neg-0:#4a1f1e;--neg-1:#7d2b2a;--neg-2:#c63b3a;--neg-3:#e5605c;--neg-4:#f4a19b;  /* in dark mode small amounts sit close to the */
+  --pos-0:#173459;--pos-1:#1c4f8f;--pos-2:#2a78d6;--pos-3:#5598e7;--pos-4:#9ec5f4;  /* dark land and big ones glow */
+  --arrow:#e9efe9;--sel-fill:#a5b2ab;
+  --exp-0:#2a6b4d;--exp-1:#3fa874;--exp-2:#7fe0ae;
+  --imp-0:#4d3880;--imp-1:#7d5ad0;--imp-2:#b79bf0}}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--page);color:var(--ink);font:16px/1.6 "DM Sans",system-ui,-apple-system,"Segoe UI",sans-serif}
+h1,h2,.kpi b,.detail h3{font-family:"DM Serif Display",Georgia,serif;font-weight:400}
+a{color:inherit}
+button{font:inherit;color:inherit}
+[hidden]{display:none!important}
+:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+.in{max-width:1000px;margin:0 auto;padding:0 max(20px,env(safe-area-inset-right)) 0 max(20px,env(safe-area-inset-left))}
+.band{background:var(--band);color:var(--band-ink);padding:8px 0 96px}
+a.back{display:inline-flex;align-items:center;min-height:44px;color:var(--band-ink);text-decoration:none;font-size:14px}
+a.back:hover{color:#fff}
+.eyebrow{margin:24px 0 12px;color:var(--brass);font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase}
+h1{margin:0;color:#fff;font-size:clamp(32px,5.5vw,50px);line-height:1.08;max-width:20ch}
+.answer{margin:18px 0 0;max-width:68ch}
+.answer b{color:#fff}
+.meta{margin:14px 0 0;font-size:13px;opacity:.75}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.kpis.top{margin-top:-64px}
+.kpi{background:var(--surface);border:1px solid var(--grid);border-radius:12px;padding:16px 18px}
+.top .kpi{box-shadow:0 14px 34px rgba(0,0,0,.10)}
+.kpi b{display:block;font-size:30px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.kpi span{font-size:13px;color:var(--ink-2)}
+.panel{background:var(--surface);border:1px solid var(--grid);border-radius:14px;padding:28px;margin-top:20px}
+.panel .tag{margin:0;color:var(--brass);font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
+h2{margin:4px 0 2px;font-size:28px;line-height:1.15}
+.dek{margin:0 0 18px;font-weight:700}
+.how{background:var(--page);border-radius:10px;padding:12px 16px;margin:0 0 18px;font-size:15px;color:var(--ink-2)}
+.how b,.so b{color:var(--ink)}
+.so{border-left:3px solid var(--brass);padding:2px 0 2px 16px;margin:20px 0 0}
+.so p{margin:0 0 8px}
+.note{color:var(--muted);font-size:13px;margin:6px 0 0}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:8px;vertical-align:middle}
+.gloss{display:grid;grid-template-columns:1fr 1fr;gap:14px 28px;margin:0}
+.gloss div{margin:0}
+.gloss dt{font-weight:700}
+.gloss dd{margin:2px 0 0;color:var(--ink-2);font-size:15px}
+.take{margin:0;padding-left:1.2rem}
+.take li{margin:0 0 12px}
+.take li::marker{color:var(--brass)}
+/* ---------- References: a quiet list after the last panel (no panel box, no question heading) ---------- */
+.refs{margin:32px 0 0;font-size:13px;line-height:1.45;color:var(--muted)}
+.refs-h{margin:0;font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
+.refs ul{list-style:none;margin:0;padding:0}
+.refs a{display:flex;align-items:center;min-height:44px;padding:4px 0;color:var(--muted);text-decoration:none}   /* 44px: easy to tap */
+.refs a b{margin-right:6px;color:var(--ink-2);font-weight:600;text-decoration:underline;text-decoration-color:var(--axis);
+  text-underline-offset:3px}
+.refs a:hover b{text-decoration-color:currentColor}
+footer{margin-top:40px;background:var(--band);color:var(--band-ink);font-size:13px}
+footer .in{padding-top:20px;padding-bottom:20px}
+.sw{display:inline-block;width:10px;height:10px;border-radius:2px;flex:none}
 
-def build_page(table, summary, world):
-    """Fill the HTML template below with the data and the map borders."""
-    data_json = json.dumps(page_data(table, summary), separators=(",", ":"))  # compact JSON text (no spaces)
-    world_json = json.dumps(world, separators=(",", ":"))     # the borders, also compact
-    html = PAGE_TEMPLATE                                      # start from the template
-    html = html.replace("__YEAR__", escape(str(summary["year"])))           # the year in titles
-    html = html.replace("__MIRROR_COUNT__", str(summary["mirror_count"]))   # used in the notes
-    html = html.replace("__DATA__", data_json.replace("</", "<\\/"))        # "<\/" so a name can never close the <script> early
-    html = html.replace("__WORLD__", world_json.replace("</", "<\\/"))
-    # returns a str: the whole web page (~850 KB, most of it the map borders), e.g.
-    # '<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n...'
-    return html
+/* ---------- map controls: Surpluses / Deficits, the country picker, the total of the side shown ---------- */
+.controls{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px}
+.seg{display:inline-flex;flex:0 1 280px;background:var(--page);border:1px solid var(--grid);border-radius:999px;padding:3px}
+.seg button{flex:1;min-height:44px;padding:0 14px;border:0;border-radius:999px;background:transparent;color:var(--ink-2);
+  font-size:15px;font-weight:600;cursor:pointer}
+.seg button:hover{color:var(--ink)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--page)}
+.pick{flex:0 1 240px;display:flex}
+.pick select{width:100%;min-height:46px;padding:0 12px;border:1px solid var(--grid);border-radius:10px;background:var(--surface);
+  color:var(--ink);font:inherit;font-size:15px}
+.total{display:flex;flex-direction:column;align-items:flex-start;font-size:13px;color:var(--ink-2)}   /* label above the number:
+                                              narrow, so the Full screen button fits on the same row */
+.total b{font-family:"DM Serif Display",Georgia,serif;font-weight:400;font-size:26px;color:var(--ink);line-height:1.1}
 
+/* ---------- the map box ---------- */
+.mapbox{position:relative;margin-top:14px;height:clamp(250px,50vw,480px);background:var(--sea);border:1px solid var(--grid);
+  border-radius:12px;overflow:hidden}
+#map{display:block;width:100%;height:100%;cursor:grab;user-select:none;-webkit-user-select:none;
+  touch-action:pan-y}                         /* one finger scrolls the page; two fingers move and zoom the map (see the JS) */
+#map:active{cursor:grabbing}
+.mapfoot{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-start;gap:10px 16px;margin-top:10px}
+.legend{flex:0 1 320px;font-size:12px;color:var(--ink-2)}
+.ramp{display:grid;grid-template-columns:repeat(10,1fr);gap:2px}
+.ramp span{height:10px;transition:opacity .25s}
+.ramp span:first-child{border-radius:3px 0 0 3px}
+.ramp span:last-child{border-radius:0 3px 3px 0}
+.ramp span.dim{opacity:.18}
+.ticks{position:relative;height:16px;font-size:11px;color:var(--muted)}
+.ticks span{position:absolute;top:1px;transform:translateX(-50%);font-variant-numeric:tabular-nums}
+.ends{display:flex;justify-content:space-between;font-weight:600}
+.lkey{display:flex;flex-wrap:wrap;align-items:center;gap:4px 14px;padding:4px 0 6px}   /* the legend while a country is picked */
+.lkey .item{display:inline-flex;align-items:center;gap:6px}
+.zoom{display:flex;gap:6px}
+.zoom button{width:44px;height:44px;border:1px solid var(--grid);border-radius:10px;background:var(--surface);
+  font:600 18px/1 "DM Sans",system-ui,sans-serif;cursor:pointer}
+.zoom button:hover{border-color:var(--axis)}
+.fsbtn{display:inline-flex;align-items:center;min-height:44px;margin-left:auto;padding:0 16px;border:1px solid var(--grid);
+  border-radius:999px;background:var(--surface);color:var(--ink);font-size:15px;font-weight:600;white-space:nowrap;cursor:pointer}
+.fsbtn:hover{border-color:var(--axis)}
+.fsbtn>span{display:inline-flex;align-items:center;gap:8px}  /* icon + text */
+.fsbtn svg{width:18px;height:18px;flex:none}
+.fsbtn .on,.fs .fsbtn .off{display:none}                     /* outside full screen: "Full screen"; inside: "Exit full screen" */
+.fs .fsbtn .on{display:inline-flex}
+.fs .fsbtn{background:var(--ink);border-color:var(--ink);color:var(--page)}   /* the way out stands out */
 
-# The page. Placeholders like __DATA__ are replaced by build_page(); everything else is plain HTML/CSS/JS.
-PAGE_TEMPLATE = r"""<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Trade Surplus Map</title>
-<meta name="description" content="World map of trade surpluses and deficits in goods, __YEAR__, with each country's top trading partners.">
-<style>
-  /* ---------- colour tokens: light by default, dark when the viewer's system is dark ---------- */
-  :root {
-    color-scheme: light dark;
-    --page: #f9f9f7;  --surface: #fcfcfb;  --ink: #0b0b0b;  --ink-2: #52514e;  --ink-3: #898781;
-    --border: #e1e0d9;  --hover: #c3c2b7;
-    --land-off: #e6e5e0;                       /* countries of the other side (not highlighted) or without data */
-    /* deficit arm (red) and surplus arm (blue): step 0 = smallest amount, step 4 = largest */
-    --neg-0: #fbd0cc; --neg-1: #f4a19b; --neg-2: #e5605c; --neg-3: #bf3534; --neg-4: #87201f;
-    --pos-0: #cde2fb; --pos-1: #9ec5f4; --pos-2: #5598e7; --pos-3: #256abf; --pos-4: #104281;
-    --arrow: #0b0b0b;
-    /* a country is picked: red/blue switch off and only its top 3 partners are coloured (step 2 = #1, 1 = #2, 0 = #3) */
-    --sel-fill: #52514e;                       /* the picked country itself */
-    --exp-0: #9ad8b6; --exp-1: #4cb584; --exp-2: #1f7f55;   /* green: countries that BUY its goods (its exports) */
-    --imp-0: #c9b3f0; --imp-1: #9a74de; --imp-2: #6236bd;   /* purple: countries that SELL to it (its imports) */
-  }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      --page: #0d0d0d;  --surface: #1a1a19;  --ink: #f0efec;  --ink-2: #c3c2b7;  --ink-3: #898781;
-      --border: #2c2c2a;  --hover: #4a4a46;  --land-off: #2f2f2c;
-      /* in dark mode small amounts sit close to the dark surface and big ones glow */
-      --neg-0: #4a1f1e; --neg-1: #7d2b2a; --neg-2: #c63b3a; --neg-3: #e5605c; --neg-4: #f4a19b;
-      --pos-0: #173459; --pos-1: #1c4f8f; --pos-2: #2a78d6; --pos-3: #5598e7; --pos-4: #9ec5f4;
-      --arrow: #f0efec;
-      --sel-fill: #c3c2b7;
-      --exp-0: #2a6b4d; --exp-1: #3fa874; --exp-2: #7fe0ae;
-      --imp-0: #4d3880; --imp-1: #7d5ad0; --imp-2: #b79bf0;
-    }
-  }
-  :root[data-theme="dark"] {
-    --page: #0d0d0d;  --surface: #1a1a19;  --ink: #f0efec;  --ink-2: #c3c2b7;  --ink-3: #898781;
-    --border: #2c2c2a;  --hover: #4a4a46;  --land-off: #2f2f2c;
-    --neg-0: #4a1f1e; --neg-1: #7d2b2a; --neg-2: #c63b3a; --neg-3: #e5605c; --neg-4: #f4a19b;
-    --pos-0: #173459; --pos-1: #1c4f8f; --pos-2: #2a78d6; --pos-3: #5598e7; --pos-4: #9ec5f4;
-    --arrow: #f0efec;
-    --sel-fill: #c3c2b7;
-    --exp-0: #2a6b4d; --exp-1: #3fa874; --exp-2: #7fe0ae;
-    --imp-0: #4d3880; --imp-1: #7d5ad0; --imp-2: #b79bf0;
-  }
+/* ---------- full screen: the map, its controls and the country card over the whole screen ----------
+   The class .fs does the layout, with or without the browser's Fullscreen API (iPhone Safari has none: there it is
+   simply a fixed layer that covers the screen). Phone: controls / map / legend / a scrollable sheet with the card.
+   Wide screen: the card becomes a scrollable column on the right. */
+.mapwrap.fs{position:fixed;top:0;right:0;bottom:0;left:0;z-index:1000;width:100%;height:100vh;height:100dvh;margin:0;
+  display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto minmax(0,38%);
+  grid-template-areas:"ctrl" "map" "foot" "side";gap:10px;overflow:hidden;overscroll-behavior:contain;
+  padding:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom))
+          max(12px,env(safe-area-inset-left));
+  background:var(--page);color:var(--ink)}
+.mapwrap.fs::backdrop{background:var(--page)}
+.fs .controls{grid-area:ctrl}
+.fs .seg{flex-basis:230px}                    /* a bit narrower, so the whole row fits next to the card column */
+.fs .pick{flex-basis:200px}
+.fs .mapbox{grid-area:map;height:auto;min-height:0;margin:0;border:1px solid var(--grid);border-radius:12px}
+.fs #map{touch-action:none}                   /* no page to scroll behind it: one finger moves the map */
+.fs .mapfoot{display:contents}                /* its two children are placed in the grid themselves: */
+.fs .legend{grid-area:foot;max-width:420px}   /*   the legend under the map */
+.fs .zoom{grid-area:map;align-self:end;justify-self:end;margin:10px;position:relative;z-index:5}   /*   zoom: corner of the map */
+.fs .zoom button{box-shadow:0 2px 8px rgba(0,0,0,.18)}
+.fs .note{display:none}
+.fs .detail{grid-area:side;min-height:0;margin:0;padding:14px 16px;grid-template-columns:minmax(0,1fr);gap:16px;
+  overflow:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;
+  background:var(--surface);border:1px solid var(--grid);border-radius:12px}
+html.fs-lock body{position:fixed;left:0;right:0;overflow:hidden}   /* the page behind stays put (JS keeps its scroll) */
+@media (min-width:900px),(orientation:landscape) and (min-width:600px){
+  .mapwrap.fs{grid-template-columns:minmax(0,1fr) clamp(280px,32vw,400px);grid-template-rows:auto minmax(0,1fr) auto;
+    grid-template-areas:"ctrl side" "map side" "foot side"}
+}
 
-  * { box-sizing: border-box; }
-  html, body { margin: 0; background: var(--page); color: var(--ink);
-               font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
-  [hidden] { display: none !important; }
-  button { font: inherit; color: inherit; }
-  :focus-visible { outline: 2px solid var(--pos-2); outline-offset: 2px; }
+/* map drawing */
+.country{stroke:var(--sea);stroke-width:.6px;vector-effect:non-scaling-stroke;cursor:pointer;transition:fill .25s,opacity .25s}
+.country.partner{stroke:var(--ink);stroke-width:1.2px;opacity:1}
+.country.sel{stroke:var(--ink);stroke-width:2px;opacity:1}
+.capdot{fill:var(--muted);opacity:.75;pointer-events:none}
+.capdot.on{fill:var(--ink);opacity:1}
+.hit{fill:transparent;cursor:pointer}
+.lbl{font-size:10.5px;fill:var(--ink);paint-order:stroke;stroke:var(--sea);stroke-width:2.5px;stroke-opacity:.8;
+  stroke-linejoin:round;pointer-events:none;transition:opacity .25s}
+.lbl.faint{opacity:.35}
+.lbl.cap{font-size:9px;fill:var(--muted)}
+.lbl.key{font-size:12.5px;font-weight:700;stroke-width:3.5px;stroke-opacity:1}
+/* arrows: drawn ABOVE every border and name: halo + thick line + head in the MIDDLE (shows the direction without
+   piling up on one country) + moving dashes; a ring on the picked country and a numbered badge 1-2-3 on each partner */
+.arrows{pointer-events:none}
+.arc-halo{fill:none;stroke:var(--sea);stroke-linecap:round}
+.arc{fill:none;stroke:var(--arrow);stroke-linecap:round}
+.flowdash{fill:none;stroke:var(--sea);stroke-linecap:round;stroke-dasharray:1 11;animation:flow 1s linear infinite}
+.head{fill:var(--arrow);stroke:var(--sea);stroke-width:1.5px;stroke-linejoin:round}
+.home{fill:var(--sea);stroke:var(--arrow);stroke-width:2.5px}           /* where every line starts: the picked country */
+.badge circle{fill:var(--arrow);stroke:var(--sea);stroke-width:2px}     /* where a line ends: the partner, with its rank */
+.badge text{fill:var(--sea);font:700 12px/1 "DM Sans",system-ui,sans-serif}
+.leader{stroke:var(--arrow);stroke-width:1.5px;stroke-dasharray:2 3}   /* a badge pushed off a crowded spot -> its capital */
+@keyframes flow{from{stroke-dashoffset:12}to{stroke-dashoffset:0}}     /* dashes travel from seller to buyer */
+.arc.grow,.arc-halo.grow{stroke-dasharray:1;animation:grow .6s ease-out both}
+.head.grow,.badge.grow,.flowdash.grow{animation:fadein .25s ease-out .5s both}
+.flowdash.grow{animation:fadein .25s ease-out .5s both,flow 1s linear .5s infinite}
+@keyframes grow{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+@keyframes fadein{from{opacity:0}}
+@media (prefers-reduced-motion:reduce){.arc.grow,.arc-halo.grow,.head.grow,.badge.grow,.flowdash,.flowdash.grow{animation:none}}
+/* the hover tooltip: page tokens only (surface / grid / ink), so it reads well in light AND dark mode, never a white box */
+.tip{position:absolute;z-index:4;pointer-events:none;background:var(--surface);color:var(--ink);border:1px solid var(--grid);
+  border-radius:8px;padding:8px 10px;font-size:13px;line-height:1.4;box-shadow:0 6px 18px rgba(0,0,0,.16);max-width:240px;
+  opacity:0;transition:opacity .1s}
+.tip b{font-size:14px}
+.tip .muted{color:var(--muted)}
 
-  /* ================= MAP VIEW: the map fills the whole screen, the controls float on top ================= */
-  #view-map { position: fixed; inset: 0; overflow: hidden; background: var(--page); }
-  #map { position: absolute; inset: 0; width: 100%; height: 100%; display: block;
-         touch-action: none; user-select: none; -webkit-user-select: none; }   /* the map is the whole screen: fingers move it */
-  .float { position: absolute; z-index: 2; background: var(--surface);
-           background: color-mix(in srgb, var(--surface) 92%, transparent); backdrop-filter: blur(6px);
-           border: 1px solid var(--border); border-radius: 12px; }
+/* ---------- the country card under the map: details on the left, the top 10 on the right ---------- */
+.detail{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.35fr);gap:20px 28px;margin-top:18px;padding-top:18px;
+  border-top:1px solid var(--grid)}
+.detail h3{margin:0;font-size:26px;line-height:1.15}
+.detail h4{margin:0 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.detail p{margin:6px 0;color:var(--ink-2);font-size:14px}
+.p-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.close{min-width:44px;height:44px;flex:none;margin:-6px -8px 0 0;border:0;border-radius:8px;background:transparent;
+  color:var(--ink-2);font-size:24px;cursor:pointer}
+.close:hover{background:var(--page);color:var(--ink)}
+.bal{display:flex;align-items:center;gap:10px;margin:8px 0 4px}
+.bal .big{font-family:"DM Serif Display",Georgia,serif;font-size:32px;line-height:1.1}
+.btag{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--ink-2)}
+.xm{display:flex;gap:24px;font-size:14px}
+.xm div span{display:block;color:var(--muted);font-size:12px}
+.est{font-size:13px!important;padding:6px 10px;border-radius:8px;background:var(--page)}
+.seg.small{display:flex;margin-top:12px;width:100%}
+.again{font-size:13px!important;color:var(--muted)!important}
+.tbl{border:1px solid var(--grid);border-radius:10px;overflow:hidden}
+.tbl table{border-collapse:collapse;width:100%;font-size:14px}
+.tbl th,.tbl td{padding:0 8px;height:40px;text-align:right;border-bottom:1px solid var(--grid);font-variant-numeric:tabular-nums;white-space:nowrap}
+.tbl tr:last-child td{border-bottom:0}
+.tbl th{height:32px;background:var(--surface);color:var(--muted);font-size:12px;font-weight:600}
+.tbl td.name,.tbl th.name{text-align:left;white-space:normal;width:100%}
+.tbl td.rk,.tbl th.rk{color:var(--muted);text-align:center;width:30px;padding:0 0 0 8px}
+.tbl tr.on td.rk{color:var(--ink);font-weight:700}
+.tbl td.rk .num{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;   /* the same 1-2-3 badge as on the map */
+  border:2px solid var(--arrow);background:var(--surface);font-size:12px}
+.tbl small{color:var(--muted)}
+.rowbtn{all:unset;cursor:pointer;display:block;padding:10px 0;min-height:22px}
+.rowbtn:hover{text-decoration:underline}
+.rowbtn:focus-visible{outline:2px solid var(--brass)}
 
-  /* top-left: title, side buttons, country picker, total */
-  .top-left { top: max(12px, env(safe-area-inset-top)); left: max(12px, env(safe-area-inset-left)); padding: 8px 12px 10px;
-              width: min(520px, calc(100% - 140px)); }
-  .title-row { display: flex; align-items: center; gap: 4px; }
-  .back { display: grid; place-items: center; width: 40px; height: 40px; margin-left: -10px; flex: none; border-radius: 8px;
-          color: var(--ink-2); text-decoration: none; font-size: 18px; }
-  .back:hover { background: var(--page); color: var(--ink); }
-  h1 { font-size: 18px; line-height: 1.25; margin: 0; letter-spacing: -0.01em; }
-  h1 span { color: var(--ink-3); font-weight: 500; }
-  .controls { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
-  .seg { display: inline-flex; flex: 1 1 200px; background: var(--page); border: 1px solid var(--border); border-radius: 10px; padding: 3px; }
-  .seg button { flex: 1; min-height: 40px; padding: 0 12px; border: 0; border-radius: 7px; background: transparent;
-                color: var(--ink-2); font-size: 15px; cursor: pointer; }
-  .seg button:hover { color: var(--ink); }
-  .seg button[aria-pressed="true"] { background: var(--ink); color: var(--surface); font-weight: 600; }
-  .pick { flex: 1 1 180px; display: flex; }
-  .pick select { width: 100%; min-height: 46px; padding: 0 10px; border: 1px solid var(--border); border-radius: 10px;
-                 background: var(--page); color: var(--ink); font: inherit; font-size: 15px; }
-  .total { margin-top: 8px; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; font-size: 13px; color: var(--ink-2); }
-  .total b { font-size: 24px; color: var(--ink); line-height: 1.1; }
+/* ---------- the all-countries table: scrolls inside its own box, header and first column pinned ---------- */
+.allc{max-height:520px;overflow:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--grid);border-radius:10px}
+.allc table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:14px}
+.allc th,.allc td{padding:9px 12px;border-bottom:1px solid var(--grid);text-align:right;white-space:nowrap}
+.allc th:first-child,.allc td:first-child{text-align:left;position:sticky;left:0;background:var(--surface);white-space:normal}
+.allc thead th{position:sticky;top:0;z-index:1;background:var(--surface);font-weight:600;color:var(--muted);font-size:12px;
+  text-transform:uppercase;letter-spacing:.04em}
+.allc thead th:first-child{z-index:2}
+.allc tr:last-child td{border-bottom:0}
 
-  /* top-right: the two icons, and the panel with the top 10 under them */
-  .icons { position: absolute; z-index: 3; top: max(12px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right));
-           display: flex; gap: 8px; }
-  .icon { width: 44px; height: 44px; display: grid; place-items: center; border: 1px solid var(--border); border-radius: 10px;
-          background: var(--surface); color: var(--ink); cursor: pointer; }
-  .icon:hover { border-color: var(--hover); }
-  .icon[aria-expanded="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
-  .icon svg { width: 20px; height: 20px; }
-  .panel { top: calc(max(12px, env(safe-area-inset-top)) + 54px); right: max(12px, env(safe-area-inset-right)); width: 360px;
-           max-height: calc(100% - 140px); overflow: auto; padding: 14px 16px 16px; }
-  .panel h2 { margin: 0; font-size: 20px; line-height: 1.2; }
-  .panel h3 { margin: 14px 0 4px; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-3); }
-  .panel p { margin: 4px 0; color: var(--ink-2); font-size: 14px; }
-  .p-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
-  .close { width: 40px; height: 40px; flex: none; margin: -8px -8px 0 0; border: 0; border-radius: 8px; background: transparent;
-           color: var(--ink-2); font-size: 22px; cursor: pointer; }
-  .close:hover { background: var(--page); color: var(--ink); }
-  .bal { display: flex; align-items: center; gap: 10px; margin: 6px 0 2px; }
-  .bal .big { font-size: 28px; font-weight: 700; line-height: 1.1; }
-  .tag { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-2); }
-  .xm { display: flex; gap: 24px; font-size: 14px; }
-  .xm div span { display: block; color: var(--ink-3); font-size: 12px; }
-  .est { font-size: 13px !important; padding: 6px 10px; border-radius: 8px; background: var(--page); }
-  .seg.small { margin-top: 12px; width: 100%; }
-  .again { font-size: 13px !important; color: var(--ink-3) !important; }
-  .sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; flex: none; }
+@media (max-width:720px){.kpis{grid-template-columns:1fr 1fr;gap:10px}.panel{padding:20px 16px}.band{padding-bottom:84px}h2{font-size:24px}
+  .kpi{padding:14px}.kpi b{font-size:25px}}
+@media (max-width:640px){
+  .gloss{grid-template-columns:1fr;gap:18px}
+  .seg,.pick{flex:1 1 100%}                   /* the buttons and the picker each take a full row */
+  .mapbox{margin-left:-16px;margin-right:-16px;border-radius:0;border-left:0;border-right:0}   /* the map uses the full phone width */
+  .legend{flex:1 1 100%}
+  .detail{grid-template-columns:1fr}          /* the top 10 table goes under the country details */
+  .allc{max-height:460px;margin-left:-16px;margin-right:-16px;border-radius:0;border-left:0;border-right:0}   /* full phone width */
+  .allc th,.allc td{padding:8px 4px;font-size:13px}
+  .allc .sw{display:none}                     /* the sign already says surplus or deficit: the colour square gives its room back */
+  .allc th:first-child,.allc td:first-child{padding-left:16px}
+  .allc th:nth-last-child(2),.allc td:nth-last-child(2){padding-right:16px}   /* Imports: the last column left on a phone */
+  .col-src{display:none}                      /* the least useful column goes on a phone */
+}
+@media (max-width:800px){.kpis{grid-template-columns:1fr 1fr;gap:10px}}   /* 4 cards side by side need ~800px (landscape phones) */
+/* full screen on a phone, or on a short landscape screen: compact controls.
+   Row 1 = Surpluses/Deficits + Exit, row 2 = the picker; the total is hidden (it is in the headline cards) */
+@media (max-width:640px),(max-height:500px){
+  .fs .controls{gap:8px}
+  .fs .seg{flex:1 1 0;min-width:0}
+  .fs .seg button{padding:0 8px}
+  .fs .fsbtn{order:2;margin-left:0;padding:0 14px}
+  .fs .fsbtn .long{display:none}              /* "Exit" instead of "Exit full screen": the room goes to the buttons */
+  .fs .pick{order:3;flex:1 1 100%}
+  .fs .total{display:none}
+  .fs .detail{padding:12px 14px}
+}
+/* a phone turned sideways (short and wide): the map takes the whole left side, controls + card share the right column */
+@media (orientation:landscape) and (max-height:500px){
+  .mapwrap.fs{grid-template-columns:minmax(0,1fr) clamp(260px,40vw,360px);grid-template-rows:auto minmax(0,1fr) auto;
+    grid-template-areas:"map ctrl" "map side" "foot side"}
+}
+"""
 
-  /* the scrollable top-10 table */
-  .tbl { max-height: min(420px, 48vh); overflow: auto; border: 1px solid var(--border); border-radius: 10px; margin-top: 6px; }
-  .tbl table { border-collapse: collapse; width: 100%; font-size: 14px; }
-  .tbl th, .tbl td { padding: 0 8px; height: 40px; text-align: right; border-bottom: 1px solid var(--border);
-                     font-variant-numeric: tabular-nums; white-space: nowrap; }
-  .tbl tr:last-child td { border-bottom: 0; }
-  .tbl th { position: sticky; top: 0; z-index: 1; height: 32px; background: var(--surface); color: var(--ink-3); font-size: 12px; font-weight: 600; }
-  .tbl td.name, .tbl th.name { text-align: left; white-space: normal; width: 100%; }
-  .tbl td.rk { color: var(--ink-3); text-align: center; width: 28px; padding: 0 0 0 8px; }
-  .tbl tr.on td.rk { color: var(--ink); font-weight: 700; }
-  .tbl td.rk .num { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%;   /* the same 1-2-3 */
-                    border: 2px solid var(--arrow); background: var(--surface); font-size: 12px; }                  /* badge as on the map */
-  .tbl small { color: var(--ink-3); }
-  .rowbtn { all: unset; cursor: pointer; display: block; padding: 10px 0; }
-  .rowbtn:hover { text-decoration: underline; }
-  .rowbtn:focus-visible { outline: 2px solid var(--pos-2); }
-
-  /* bottom-left legend, bottom-right zoom */
-  .legend { left: max(12px, env(safe-area-inset-left)); bottom: max(12px, env(safe-area-inset-bottom)); width: 300px;
-            padding: 6px 10px 2px; font-size: 12px; color: var(--ink-2); }
-  .ramp { display: grid; grid-template-columns: repeat(10, 1fr); gap: 2px; }
-  .ramp span { height: 10px; transition: opacity .25s; }
-  .ramp span:first-child { border-radius: 3px 0 0 3px; }
-  .ramp span:last-child { border-radius: 0 3px 3px 0; }
-  .ramp span.dim { opacity: .18; }
-  .ticks { position: relative; height: 16px; font-size: 11px; color: var(--ink-3); }
-  .ticks span { position: absolute; top: 1px; transform: translateX(-50%); font-variant-numeric: tabular-nums; }
-  .ends { display: flex; justify-content: space-between; font-weight: 600; }
-  /* the legend while a country is picked: the picked country + 3 partner steps */
-  .lkey { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; padding: 4px 0 6px; }
-  .lkey .item { display: inline-flex; align-items: center; gap: 6px; }
-  .lkey .steps { display: inline-flex; gap: 2px; }
-  .lkey .steps span { width: 20px; height: 10px; }
-  .lkey .steps span:first-child { border-radius: 3px 0 0 3px; }
-  .lkey .steps span:last-child { border-radius: 0 3px 3px 0; }
-  .zoom { position: absolute; z-index: 2; right: max(12px, env(safe-area-inset-right)); bottom: max(12px, env(safe-area-inset-bottom));
-          display: flex; gap: 6px; }
-  .zoom button { width: 44px; height: 44px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface);
-                 font: 600 18px/1 system-ui, sans-serif; cursor: pointer; }
-  .zoom button:hover { border-color: var(--hover); }
-
-  /* map drawing */
-  .country { stroke: var(--surface); stroke-width: 0.6px; vector-effect: non-scaling-stroke; cursor: pointer; transition: fill .25s, opacity .25s; }
-  .country.partner { stroke: var(--ink); stroke-width: 1.2px; opacity: 1; }
-  .country.sel { stroke: var(--ink); stroke-width: 2px; opacity: 1; }
-  .dot { fill: var(--ink-3); opacity: .75; pointer-events: none; }
-  .dot.on { fill: var(--ink); opacity: 1; }
-  .hit { fill: transparent; cursor: pointer; }
-  .lbl { font-size: 10.5px; fill: var(--ink); paint-order: stroke; stroke: var(--surface); stroke-width: 2.5px; stroke-opacity: .8;
-         stroke-linejoin: round; pointer-events: none; transition: opacity .25s; }
-  .lbl.faint { opacity: .35; }
-  .lbl.cap { font-size: 9px; fill: var(--ink-3); }
-  .lbl.key { font-size: 12.5px; font-weight: 700; stroke-width: 3.5px; stroke-opacity: 1; }
-  /* arrows: drawn ABOVE every border and name: halo + thick line + head in the MIDDLE (shows the direction without
-     piling up on one country) + moving dashes; a ring on the picked country and a numbered badge 1-2-3 on each partner */
-  .arrows { pointer-events: none; }
-  .arc-halo { fill: none; stroke: var(--surface); stroke-linecap: round; }
-  .arc { fill: none; stroke: var(--arrow); stroke-linecap: round; }
-  .flowdash { fill: none; stroke: var(--surface); stroke-linecap: round; stroke-dasharray: 1 11; animation: flow 1s linear infinite; }
-  .head { fill: var(--arrow); stroke: var(--surface); stroke-width: 1.5px; stroke-linejoin: round; }
-  .home { fill: var(--surface); stroke: var(--arrow); stroke-width: 2.5px; }      /* where every line starts: the picked country */
-  .badge circle { fill: var(--arrow); stroke: var(--surface); stroke-width: 2px; }  /* where a line ends: the partner, with its rank */
-  .badge text { fill: var(--surface); font: 700 12px/1 system-ui, sans-serif; }
-  .leader { stroke: var(--arrow); stroke-width: 1.5px; stroke-dasharray: 2 3; }      /* a badge pushed off a crowded spot -> its capital */
-  @keyframes flow { from { stroke-dashoffset: 12; } to { stroke-dashoffset: 0; } }   /* dashes travel from seller to buyer */
-  .arc.grow, .arc-halo.grow { stroke-dasharray: 1; animation: grow .6s ease-out both; }
-  .head.grow, .badge.grow, .flowdash.grow { animation: fadein .25s ease-out .5s both; }
-  .flowdash.grow { animation: fadein .25s ease-out .5s both, flow 1s linear .5s infinite; }
-  @keyframes grow { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
-  @keyframes fadein { from { opacity: 0; } }
-  @media (prefers-reduced-motion: reduce) { .arc.grow, .arc-halo.grow, .head.grow, .badge.grow, .flowdash, .flowdash.grow { animation: none; } }
-
-  .tip { position: absolute; z-index: 4; pointer-events: none; background: var(--surface); border: 1px solid var(--border);
-         border-radius: 8px; padding: 8px 10px; font-size: 13px; line-height: 1.4; box-shadow: 0 4px 14px rgba(0,0,0,.12);
-         max-width: 240px; opacity: 0; transition: opacity .1s; }
-  .tip b { font-size: 14px; }
-  .tip .muted { color: var(--ink-3); }
-
-  /* ================= HOW TO READ IT: a normal scrolling page, full width ================= */
-  #view-notes { padding: 20px 32px 40px; }
-  .notes-head { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
-  .notes-head h1 { font-size: 24px; }
-  .btn { min-height: 44px; padding: 0 16px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface);
-         cursor: pointer; font-size: 15px; }
-  .btn:hover { border-color: var(--hover); }
-  .facts { list-style: none; margin: 0 0 28px; padding: 0; display: grid; gap: 10px;
-           grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
-  .facts li { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px;
-              font-size: 14px; color: var(--ink-2); }
-  .facts b { display: block; color: var(--ink); font-size: 15px; }
-  #view-notes h2 { font-size: 18px; margin: 0 0 8px; }
-  .table-box { overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
-  .table-box table { border-collapse: collapse; width: 100%; font-size: 14px; }
-  .table-box th, .table-box td { padding: 8px 12px; text-align: right; border-bottom: 1px solid var(--border); white-space: nowrap;
-                                 font-variant-numeric: tabular-nums; }
-  .table-box th:first-child, .table-box td:first-child { text-align: left; position: sticky; left: 0; background: var(--surface); white-space: normal; }
-  .table-box thead th { position: sticky; top: 0; background: var(--surface); color: var(--ink-3); font-weight: 600; font-size: 12px; z-index: 1; }
-  .table-box thead th:first-child { z-index: 2; }
-  footer { margin-top: 24px; color: var(--ink-3); font-size: 13px; }
-  footer a { color: inherit; display: inline-block; padding: 12px 4px; margin: -12px -4px; }
-
-  /* ================= PHONE ================= */
-  @media (max-width: 640px) {
-    .top-left { left: 8px; right: 8px; top: max(8px, env(safe-area-inset-top)); width: auto; padding: 6px 10px 8px; }
-    .title-row { padding-right: 96px; min-height: 44px; }              /* room for the two icons that sit in this bar's corner */
-    h1 { font-size: 15px; }
-    .icons { top: calc(max(8px, env(safe-area-inset-top)) + 6px); right: 14px; }
-    .seg { flex-basis: 160px; }
-    .pick { flex-basis: 130px; }
-    .total { margin-top: 6px; }
-    .total b { font-size: 20px; }
-    .legend { left: 8px; bottom: max(8px, env(safe-area-inset-bottom)); width: calc(100% - 76px); }
-    .zoom { right: 8px; bottom: max(8px, env(safe-area-inset-bottom)); flex-direction: column; }
-    /* the panel becomes a sheet at the bottom of the screen */
-    .panel { top: auto; left: 0; right: 0; bottom: 0; width: auto; height: 46%; max-height: none; border-radius: 14px 14px 0 0;
-             padding: 12px 14px calc(16px + env(safe-area-inset-bottom)); border-bottom: 0; }
-    .tbl { max-height: none; }
-    #view-map.sheet-open .legend, #view-map.sheet-open .zoom { bottom: calc(46% + 8px); }
-    #view-map.sheet-open .legend, #view-map.sheet-open .zoom { display: none; }   /* the sheet needs the room; pinch still zooms */
-    #view-notes { padding: 14px 16px 32px; }
-    .col-src { display: none; }                                         /* the least useful table column goes on a phone */
-  }
-</style>
-</head>
-<body>
-
-<!-- ======================= MAP VIEW ======================= -->
-<div id="view-map">
-  <svg id="map" role="img" aria-label="World map coloured by trade balance"></svg>
-
-  <div class="float top-left">
-    <div class="title-row">
-      <a class="back" href="../index.html" aria-label="Back to Macro Quant Lab">&larr;</a>
-      <h1>Who sells more than it buys? <span>__YEAR__</span></h1>
-    </div>
-    <div class="controls">
-      <div class="seg" role="group" aria-label="Show countries">
-        <button type="button" data-side="surplus" aria-pressed="true">Surpluses</button>
-        <button type="button" data-side="deficit" aria-pressed="false">Deficits</button>
-      </div>
-      <label class="pick"><select id="pick" aria-label="Pick a country"></select></label>
-    </div>
-    <div class="total" id="total" aria-live="polite"></div>
-  </div>
-
-  <div class="icons">
-    <button type="button" class="icon" id="open-notes" aria-label="How to read it" title="How to read it">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9.5"/><path d="M12 11v6"/><circle cx="12" cy="7.5" r=".6" fill="currentColor"/></svg>
-    </button>
-    <button type="button" class="icon" id="toggle-panel" aria-label="Top 10 table" title="Top 10 table" aria-expanded="false" aria-controls="panel">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3.5" y="4" width="17" height="16" rx="2"/><path d="M3.5 9.5h17M3.5 14.5h17M9 4v16"/></svg>
-    </button>
-  </div>
-
-  <section class="float panel" id="panel" aria-live="polite" hidden></section>
-
-  <div class="float legend" id="legend"></div>
-  <div class="zoom">
-    <button type="button" id="zin" aria-label="Zoom in">+</button>
-    <button type="button" id="zout" aria-label="Zoom out">&minus;</button>
-    <button type="button" id="zreset" aria-label="Reset the view">&#8634;</button>
-  </div>
-  <div class="tip" id="tip" role="tooltip"></div>
-</div>
-
-<!-- ======================= HOW TO READ IT ======================= -->
-<div id="view-notes" hidden>
-  <div class="notes-head">
-    <button type="button" class="btn" id="back-map">&larr; Map</button>
-    <h1>How to read it</h1>
-  </div>
-  <ul class="facts">
-    <li><b>Balance = exports &minus; imports</b>Goods only, __YEAR__, in US dollars.</li>
-    <li><b>Blue = surplus, red = deficit</b>Sells more than it buys, or the opposite. Darker = bigger.</li>
-    <li><b>Click a country three times</b>1st: its bigger side. 2nd: the other side. 3rd: back to the world map.</li>
-    <li><b>Pick a country: red and blue switch off</b>Green = its top 3 buyers, purple = its top 3 sellers. Darker = bigger.</li>
-    <li><b>Arrows: seller &rarr; buyer</b>Numbered 1-2-3 where they end; the arrowhead in the middle shows the direction. Top 10 in the table.</li>
-    <li><b>Services not counted</b>Tourism, finance and software are not in these numbers.</li>
-    <li><b>__MIRROR_COUNT__ countries are estimated</b>They did not report; their partners' numbers are used instead.</li>
-    <li><b>The world does not add to zero</b>Freight costs, timing and re-exports through hubs.</li>
-    <li><b>Source</b>UN Comtrade; capitals: World Bank; borders: Natural Earth.</li>
-  </ul>
-  <h2>All countries</h2>
-  <div class="table-box"><table id="table"></table></div>
-  <footer>Made in the <a href="../index.html">Macro Quant Lab</a>. Data: UN Comtrade, __YEAR__.</footer>
-</div>
-
-<script src="lib/d3.min.js" integrity="sha384-CjloA8y00+1SDAUkjs099PVfnY2KmDC2BZnws9kh8D/lX1s46w6EPhpXdqMfjK6i"></script>
-<script src="lib/topojson-client.min.js" integrity="sha384-Ukv1p/xTma6P4/2bY5KzWBw+ydSpXmhCMtyciIQVDJ1RmOxtCYNMF1uXT9T63H67"></script>
-<script>
+JS = r"""
 // =====================================================================
 // 1. Data (written into the page by trade_balance.py)
 // =====================================================================
@@ -731,12 +674,12 @@ const ARROWS = 3;                         // arrows drawn on the map (the table 
 const phoneQuery = matchMedia("(max-width: 640px)");   // the phone layout switch
 const touchQuery = matchMedia("(pointer: coarse)");    // a finger, not a mouse
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const VERB = touchQuery.matches ? "Tap" : "Click";     // say "tap" to touch users, "click" to mouse users
 
 const state = {
   side: "surplus",                        // "surplus" | "deficit": which side is coloured
   selected: null,                         // ISO3 of the picked country, or null
   flow: "x",                              // "x" = its exports (who buys from it), "m" = its imports (who sells to it)
-  panelOpen: false,                       // the top-10 panel in the corner
   t: d3.zoomIdentity,                     // current zoom (scale k, shift x/y)
   drawKey: "",                            // changes when arrows must animate again
 };
@@ -827,15 +770,24 @@ const gLabels = gOverlay.append("g");
 const gArrows = gOverlay.append("g").attr("class", "arrows");
 const gBadges = gOverlay.append("g").attr("class", "arrows");   // the 1-2-3 badges sit above every line, so no line hides a number
 const gHits = gOverlay.append("g");             // invisible bigger tap targets for tiny countries
-let W = 0, H = 0, projection, path, box, home = d3.zoomIdentity, lastInsets = "", started = false;
+let W = 0, H = 0, projection, path, box, home = d3.zoomIdentity, lastSize = "", started = false;
 
-// mouse: wheel + drag; finger: one finger moves, two fingers zoom (the map is the whole screen, so nothing else needs the finger)
+// The map sits inside a scrolling page, so it must never trap the page scroll:
+//   mouse: drag moves the map; the plain wheel scrolls the page, Ctrl + wheel (or a trackpad pinch) zooms the map
+//   finger: ONE finger scrolls the page (touch-action: pan-y in the CSS), TWO fingers move and zoom the map
+// In full screen (fsOpen, section 11) there is no page behind to scroll: the plain wheel and one finger move the map too.
 const zoom = d3.zoom()
   .scaleExtent([1, 14])
+  .filter(e => {
+    if (e.type === "wheel") return fsOpen || e.ctrlKey || e.metaKey;          // plain wheel: leave it to the page
+    if (e.type === "touchstart") return fsOpen || e.touches.length >= 2;      // one finger: leave it to the page
+    return !e.button;                                               // mouse: left button drags the map
+  })
+  .wheelDelta(e => -e.deltaY * (e.deltaMode === 1 ? 0.05 : e.deltaMode ? 1 : 0.002) * 2)   // d3's default is 10x faster with Ctrl
   .on("zoom", e => { state.t = e.transform; gWorld.attr("transform", e.transform); scheduleOverlay(); });
 svg.call(zoom).on("dblclick.zoom", null);
 const dur = reduceMotion ? 0 : 400;
-function zoomCentre() {                         // zoom buttons zoom around the picked country, or the middle of the free area
+function zoomCentre() {                         // zoom buttons zoom around the picked country, or the middle of the map
   const ll = state.selected && geoPoint(state.selected);
   if (ll) { const p = state.t.apply(projection(ll)); if (p[0] > box.x0 && p[0] < box.x1 && p[1] > box.y0 && p[1] < box.y1) return p; }
   return [(box.x0 + box.x1) / 2, (box.y0 + box.y1) / 2];
@@ -846,25 +798,13 @@ document.getElementById("zreset").onclick = () => svg.transition().duration(dur)
 function fit(t) { return zoom.constrain()(t, [[0, 0], [W, H]], [[0, 0], [W, H]]); }   // never past the edge of the world
 
 // =====================================================================
-// 5. Build: fit the world into the screen area NOT covered by the floating boxes (rebuilt on resize / rotation / panel)
+// 5. Build: fit the world into the map box (rebuilt when the box changes size: window resize, phone rotation)
 // =====================================================================
-function insets() {                             // how much of each screen edge the floating boxes cover
-  const phone = phoneQuery.matches;
-  const v = viewMap.getBoundingClientRect();
-  const top = document.querySelector(".top-left").getBoundingClientRect().bottom - v.top + 6;
-  const panel = document.getElementById("panel");
-  let bottom = phone ? document.getElementById("legend").offsetHeight + 16 : 12, right = 0;
-  if (state.panelOpen && phone) bottom = panel.offsetHeight + 6;          // the bottom sheet
-  if (state.panelOpen && !phone) right = panel.offsetWidth + 24;          // the corner panel
-  return { top, bottom, right };
-}
 function build() {
-  if (viewMap.hidden) return;                   // the "How to read it" page is showing: nothing to draw
   const phone = phoneQuery.matches;
   W = viewMap.clientWidth; H = viewMap.clientHeight;
-  const ins = insets();
-  lastInsets = JSON.stringify(ins) + W + "x" + H;
-  box = { x0: 8, y0: ins.top, x1: W - 8 - ins.right, y1: H - ins.bottom };   // the free area where the world goes
+  lastSize = W + "x" + H;
+  box = { x0: 8, y0: 8, x1: W - 8, y1: H - 8 };  // the area where the world goes (a small margin all round)
   projection = d3.geoNaturalEarth1().fitExtent([[box.x0, box.y0], [box.x1, box.y1]], WORLD_FC);
   path = d3.geoPath(projection);
   features.forEach(f => { f.baseArea = path.area(f.main); });   // size on screen at zoom 1, decides which names fit
@@ -876,13 +816,13 @@ function build() {
     .on("mousemove", (e, f) => showTip(e, f.iso, f.properties.name))
     .on("mouseleave", hideTip);
   zoom.extent([[0, 0], [W, H]]).translateExtent([[0, 0], [W, H]]);
-  // on a phone the world is much wider than tall: start zoomed in so it fills the free area (Europe/Africa in the middle)
+  // on a phone the world is much wider than tall: start a little zoomed in so it fills more of the box (Europe/Africa in the middle)
   const [[, by0], [, by1]] = path.bounds(WORLD_FC);
-  const k0 = phone ? Math.max(1, Math.min(1.6, (box.y1 - box.y0) / (by1 - by0))) : 1;
+  const k0 = phone ? Math.max(1, Math.min(1.35, (box.y1 - box.y0) / (by1 - by0))) : 1;
   const centre = projection([12, 20]);
   home = k0 > 1 ? fit(d3.zoomIdentity.translate((box.x0 + box.x1) / 2 - centre[0] * k0, (box.y0 + box.y1) / 2 - (by0 + by1) / 2 * k0).scale(k0))
                 : d3.zoomIdentity;
-  // first draw: start at home. Later rebuilds (panel opens/closes, rotation): keep the zoom the user already has
+  // first draw: start at home. Later rebuilds (rotation, resize): keep the zoom the user already has
   svg.interrupt().call(zoom.transform, started ? fit(state.t) : home);
   started = true;
   paint();
@@ -894,7 +834,7 @@ gBack.on("click", () => select(null));
 // =====================================================================
 function paint() {
   const sel = state.selected;
-  partnerStep = sel ? partnerSteps(sel) : {};   // the colour step of each of the top 10 partners (fillFor reads it)
+  partnerStep = sel ? partnerSteps(sel) : {};   // the colour step of each of the top 3 partners (fillFor reads it)
   const partners = new Set(arrowPartners(sel).map(p => p[0]));   // the top 3 (with arrows) also get a dark outline
   gCountries.selectAll("path")
     .style("fill", f => f.iso ? fillFor(f.iso) : "var(--land-off)")
@@ -944,7 +884,7 @@ function overlay() {
   // capital dots
   const dots = Object.keys(C).filter(iso => C[iso].ll).map(iso => ({ iso, p: toScreen(C[iso].ll) }));
   gDots.selectAll("circle").data(dots, d => d.iso).join("circle")
-    .attr("class", d => "dot" + (key.has(d.iso) ? " on" : ""))
+    .attr("class", d => "capdot" + (key.has(d.iso) ? " on" : ""))
     .attr("cx", d => d.p[0]).attr("cy", d => d.p[1])
     .attr("r", d => key.has(d.iso) ? 3.2 : (k > 3 ? 1.8 : 1.1))
     .style("opacity", d => key.has(d.iso) ? null : (sel ? 0.2 : shown(C[d.iso]) ? null : 0.3));
@@ -1039,7 +979,7 @@ function overlay() {
     for (const o of spots) {
       const x0 = o.anchor === "middle" ? o.x - w / 2 : o.anchor === "end" ? o.x - w : o.x, y0 = o.y - h / 2;
       const b = [x0, y0, x0 + w, y0 + h];
-      if (b[0] < 0 || b[2] > W || b[1] < 0 || b[3] > H) continue;            // off screen
+      if (b[0] < 0 || b[2] > W || b[1] < 0 || b[3] > H) continue;            // off the map box
       if (boxes.some(q => b[0] < q[2] && b[2] > q[0] && b[1] < q[3] && b[3] > q[1])) continue;  // overlaps
       boxes.push(b); placed.push({ ...l, ...o }); placedIds.add(l.id);
       break;
@@ -1085,7 +1025,7 @@ function overlay() {
 const byArea = features.filter(f => f.label).slice();   // sorted biggest first in build()
 
 // =====================================================================
-// 8. Tooltip (mouse only; with a finger the panel shows the same and more)
+// 8. Tooltip (mouse only; with a finger the card under the map shows the same and more)
 // =====================================================================
 const tip = document.getElementById("tip");
 function showTip(e, iso, fallbackName) {
@@ -1107,7 +1047,7 @@ function showTip(e, iso, fallbackName) {
 function hideTip() { tip.style.opacity = 0; }
 
 // =====================================================================
-// 9. Total, legend, the top-10 panel, the all-countries table
+// 9. Total, legend, the country card under the map, the all-countries table
 // =====================================================================
 const all = Object.entries(C).map(([iso, c]) => ({ iso, ...c }));
 const surplus = all.filter(c => c.b > 0).sort((a, b) => b.b - a.b);
@@ -1141,44 +1081,44 @@ function renderLegend() {                      // 5 red + 5 blue steps; the side
     `<div class="ramp">${sw}</div><div class="ticks">${ticks}</div>`;
 }
 
-function renderPanel() {                       // the corner panel (a bottom sheet on a phone)
+function renderPanel() {                       // the card under the map: the picked country (or the top 10 of the side shown)
   const el = document.getElementById("panel");
-  if (!state.panelOpen) return;
   const sel = state.selected, c = sel && C[sel];
-  const closeBtn = `<button type="button" class="close" id="close" aria-label="Close">&times;</button>`;
   if (!c) {                                     // nothing picked: the 10 largest of the side being shown
     const list = (state.side === "surplus" ? surplus : deficit).slice(0, 10);
-    el.innerHTML = `<div class="p-head"><h2>Largest ${state.side === "surplus" ? "surpluses" : "deficits"}</h2>${closeBtn}</div>` +
-      `<p>Pick a country on the map to see its top partners.</p>` +
-      `<div class="tbl"><table><thead><tr><th class="rk">#</th><th class="name">Country</th><th>Balance</th></tr></thead><tbody>` +
+    el.innerHTML =
+      `<div><h3>Largest ${state.side === "surplus" ? "surpluses" : "deficits"}</h3>` +
+      `<p>${VERB} a country on the map, a name in the table, or pick it from the list above to see its top partners.</p></div>` +
+      `<div><h4>Top 10, ${DATA.summary.year}</h4><div class="tbl"><table><thead><tr><th class="rk">#</th><th class="name">Country</th><th>Balance</th></tr></thead><tbody>` +
       list.map((d, i) => `<tr><td class="rk">${i + 1}</td><td class="name"><button type="button" class="rowbtn" data-iso="${d.iso}">${esc(d.n)}</button></td>` +
-                         `<td>${swatch(d.b)} ${money(d.b, true)}</td></tr>`).join("") + `</tbody></table></div>`;
+                         `<td>${swatch(d.b)} ${money(d.b, true)}</td></tr>`).join("") + `</tbody></table></div></div>`;
   } else {
     const list = partnersOf(sel), total = state.flow === "x" ? c.x : c.m;
     const other = state.flow === "x" ? "imports" : "exports";
     el.innerHTML =
-      `<div class="p-head"><h2>${esc(c.n)}</h2>${closeBtn}</div>` +
+      `<div><div class="p-head"><h3>${esc(c.n)}</h3>` +
+      `<button type="button" class="close" id="close" aria-label="Back to the world map" title="Back to the world map">&times;</button></div>` +
       (c.c ? `<p>Capital: ${esc(c.c)}</p>` : "") +
-      `<div class="bal"><span class="big">${money(c.b, true)}</span><span class="tag">${swatch(c.b)}${c.b >= 0 ? "Surplus" : "Deficit"}</span></div>` +
+      `<div class="bal"><span class="big">${money(c.b, true)}</span><span class="btag">${swatch(c.b)}${c.b >= 0 ? "Surplus" : "Deficit"}</span></div>` +
       `<div class="xm"><div><span>Exports</span>${money(c.x)}</div><div><span>Imports</span>${money(c.m)}</div></div>` +
-      (c.s === "m" ? `<p class="est">Estimated from partners' data: it did not report its own __YEAR__ figures.</p>` : "") +
+      (c.s === "m" ? `<p class="est">Estimated from partners' data: it did not report its own ${DATA.summary.year} figures.</p>` : "") +
       `<div class="seg small" role="group" aria-label="Partners to show">` +
       `<button type="button" data-side="surplus" aria-pressed="${state.flow === "x"}">Exports to</button>` +
       `<button type="button" data-side="deficit" aria-pressed="${state.flow === "m"}">Imports from</button></div>` +
-      `<p class="again">${state.flow === state.firstFlow ? `Click ${esc(c.n)} again to see its ${other}.` : `Click ${esc(c.n)} again to go back to the world map.`}</p>` +
-      `<h3>Top 10 ${state.flow === "x" ? "buyers of its goods" : "sellers to it"}</h3>` +
+      `<p class="again">${state.flow === state.firstFlow ? `${VERB} ${esc(c.n)} again to see its ${other}.` : `${VERB} ${esc(c.n)} again to go back to the world map.`}</p></div>` +
+      `<div><h4>Top 10 ${state.flow === "x" ? "buyers of its goods" : "sellers to it"}</h4>` +
       `<div class="tbl"><table><thead><tr><th class="rk">#</th><th class="name">${state.flow === "x" ? "Buyer" : "Seller"}</th><th>US$</th><th>Share</th></tr></thead><tbody>` +
       list.map(([iso, v], i) => `<tr class="${i < ARROWS ? "on" : ""}"><td class="rk">${i < ARROWS ? `<span class="num">${i + 1}</span>` : i + 1}</td>` +
         `<td class="name"><button type="button" class="rowbtn" data-iso="${iso}">${esc(C[iso] ? C[iso].n : iso)}</button></td>` +
         `<td>${partnerSwatch(iso)} ${money(v)}</td><td><small>${total > 0 ? (100 * v / total).toFixed(0) + "%" : ""}</small></td></tr>`).join("") +
-      `</tbody></table></div>`;
+      `</tbody></table></div></div>`;
+    document.getElementById("close").onclick = () => select(null);   // back to the world map
   }
-  document.getElementById("close").onclick = () => { select(null); setPanel(false); };   // close = clear the pick too
   el.querySelectorAll("[data-side]").forEach(b => b.onclick = () => setSide(b.dataset.side));
   el.querySelectorAll(".rowbtn").forEach(b => b.onclick = () => select(b.dataset.iso));
 }
 
-function renderTable() {                       // "How to read it": every country, biggest surplus first, biggest deficit last
+function renderTable() {                       // every country, biggest surplus first, biggest deficit last
   const rows = all.slice().sort((a, b) => b.b - a.b);
   document.getElementById("table").innerHTML =
     `<thead><tr><th>Country</th><th>Balance</th><th>Exports</th><th>Imports</th><th class="col-src">Data</th></tr></thead><tbody>` +
@@ -1187,7 +1127,7 @@ function renderTable() {                       // "How to read it": every countr
 }
 
 // =====================================================================
-// 10. Interaction: side buttons, country picker, selection, panel, "How to read it"
+// 10. Interaction: side buttons, country picker, selection
 // =====================================================================
 function setSide(side) {                        // Surpluses <-> Deficits (with a country picked: its exports <-> imports)
   state.side = side;
@@ -1219,50 +1159,330 @@ function select(iso) {
   pick.value = state.selected || "";
   history.replaceState(null, "", state.selected ? "#" + state.selected : location.pathname + location.search);
   hideTip();
-  if (state.selected && !state.panelOpen) { setPanel(true); return; }   // opening the panel rebuilds the map (and shows the arrows)
   paint();                                      // arrows redraw; the zoom and position are left exactly as they are
 }
-
-function setPanel(open) {                       // open/close the top-10 panel; the map makes room for it
-  state.panelOpen = open;
-  document.getElementById("panel").hidden = !open;
-  document.getElementById("toggle-panel").setAttribute("aria-expanded", open);
-  viewMap.classList.toggle("sheet-open", open);
-  renderPanel();
-  build();
-}
-document.getElementById("toggle-panel").onclick = () => setPanel(!state.panelOpen);
-
-// "How to read it": a separate view on the same page
-function showNotes(open) {
-  viewMap.hidden = open;
-  document.getElementById("view-notes").hidden = !open;
-  if (open) { renderTable(); window.scrollTo(0, 0); document.getElementById("back-map").focus(); }
-  else build();
-}
-document.getElementById("open-notes").onclick = () => showNotes(true);
-document.getElementById("back-map").onclick = () => showNotes(false);
-document.addEventListener("keydown", e => {     // Esc: back to the map, or clear the picked country
+document.addEventListener("keydown", e => {     // Esc: first leave full screen; otherwise clear the picked country
   if (e.key !== "Escape") return;
-  if (viewMap.hidden) showNotes(false); else if (state.selected) select(null);
+  if (fsOpen) { closeFs(); return; }            // full screen is open: Esc only closes it (the country stays picked)
+  if (state.selected) select(null);
 });
+if (touchQuery.matches) document.querySelectorAll(".mouse-only").forEach(x => x.hidden = true);   // the right hint for a finger...
+else document.querySelectorAll(".touch-only").forEach(x => x.hidden = true);                     // ...or for a mouse
+document.querySelectorAll(".verb").forEach(x => x.textContent = VERB);                           // "Tap" or "Click" in the reading guide
 
 // =====================================================================
-// 11. Start, and rebuild when the screen size changes (window resize, phone rotation)
+// 11. Full screen: the map, its controls and the country card over the whole screen
+// =====================================================================
+// The CSS class .fs on #mapwrap does the layout. On top of it we ask the browser for real full screen (Fullscreen API)
+// where it exists; where it does not (iPhone Safari) or is refused, the .fs layer alone covers the screen.
+const wrap = document.getElementById("mapwrap");    // the box that goes full screen (controls + map + legend + card)
+const fsBtn = document.getElementById("fs");        // the "Full screen" / "Exit full screen" button
+let fsOpen = false;                                 // is the full-screen layout on?
+let savedY = 0;                                     // how far the page was scrolled when full screen opened
+function fsElement() { return document.fullscreenElement || document.webkitFullscreenElement || null; }   // null = not in API full screen
+function quiet(p) { if (p && p.catch) p.catch(() => {}); }   // a refused request is fine: the CSS layer is already showing
+function rebuildMap() {                             // the map box changed size: draw the world again to fit it, from the home view
+  hideTip();
+  requestAnimationFrame(() => { started = false; build(); });   // started = false -> build() starts at "home" for the new size
+}
+function openFs() {
+  if (fsOpen) return;
+  fsOpen = true;
+  savedY = window.scrollY;                          // remember the scroll, to come back to the same spot
+  document.body.style.top = -savedY + "px";         // the body is pinned (html.fs-lock) where it was, so nothing jumps
+  document.documentElement.classList.add("fs-lock");
+  wrap.classList.add("fs");                         // the layer covers the screen now, API or not
+  fsBtn.setAttribute("aria-pressed", "true");
+  fsBtn.setAttribute("aria-label", "Exit full screen");
+  const req = wrap.requestFullscreen || wrap.webkitRequestFullscreen;   // the standard name, or the old Safari (iPad) one
+  if (req) { try { quiet(req.call(wrap)); } catch (err) { /* not allowed here: keep the CSS layer */ } }
+  rebuildMap();
+  fsBtn.focus({ preventScroll: true });             // keyboard users land on the way out
+}
+function closeFs() {
+  if (!fsOpen) return;
+  fsOpen = false;
+  wrap.classList.remove("fs");                      // back into the page
+  document.documentElement.classList.remove("fs-lock");
+  document.body.style.top = "";
+  fsBtn.setAttribute("aria-pressed", "false");
+  fsBtn.setAttribute("aria-label", "Open the map in full screen");
+  if (fsElement()) {                                // still in the browser's full screen: leave it
+    const exit = document.exitFullscreen || document.webkitExitFullscreen;
+    try { quiet(exit.call(document)); } catch (err) { /* already gone */ }
+  }
+  window.scrollTo(0, savedY);                       // the page is back where the reader left it
+  rebuildMap();
+  fsBtn.focus({ preventScroll: true });
+}
+fsBtn.onclick = () => (fsOpen ? closeFs() : openFs());
+["fullscreenchange", "webkitfullscreenchange"].forEach(ev => document.addEventListener(ev, () => {
+  if (fsElement()) return;                          // just entered: the ResizeObserver redraws the map at the new size
+  if (fsOpen) closeFs();                            // the browser left full screen by itself (Esc, back gesture): follow it
+  else window.scrollTo(0, savedY);                  // we left it ourselves: some browsers scroll on exit, put the page back
+}));
+
+// =====================================================================
+// 12. Start, and rebuild when the map box changes size (window resize, phone rotation)
 // =====================================================================
 new ResizeObserver(() => requestAnimationFrame(() => {
-  if (viewMap.hidden) return;
-  const now = JSON.stringify(insets()) + viewMap.clientWidth + "x" + viewMap.clientHeight;
-  if (now !== lastInsets) build();
+  if (viewMap.clientWidth + "x" + viewMap.clientHeight !== lastSize) build();
 })).observe(viewMap);
 phoneQuery.addEventListener("change", build);
+renderTable();
 build();
 const fromHash = location.hash.slice(1).toUpperCase();   // a link like trade_balance.html#DEU opens Germany
 if (C[fromHash]) select(fromHash);
-</script>
+"""
+
+SOURCES = [                               # (headline, what it gives, link): one line each in the References list
+    ("UN Comtrade", "Exports and imports of goods by partner, every country, __YEAR__", "https://comtradeplus.un.org/"),
+    ("World Bank country list", "Capital cities and their coordinates (where the arrows start and end)", WORLD_BANK_COUNTRIES_URL),
+    ("Natural Earth, via world-atlas", "Country borders at 1:50 million", "https://github.com/topojson/world-atlas"),
+]
+
+# The two icons of the full-screen button, drawn inline (no image file, and they take the text colour in both modes)
+ICON_EXPAND = ('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" '
+               'stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>')  # 4 corners
+ICON_CLOSE = ('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" '
+              'aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>')                                       # a cross
+
+
+def references(year):
+    """The quiet 'References' list after the last panel: one line per source, muted, no panel box (see CLAUDE.md)."""
+    lines = "".join(                                           # one <li> per source; the whole line is the link (44px tall)
+        f'<li><a href="{escape(url)}" target="_blank" rel="noopener"><span><b>{escape(name)}</b>'
+        f'{escape(what.replace("__YEAR__", str(year)))}</span></a></li>'   # __YEAR__ -> 2024
+        for name, what, url in SOURCES)
+    # returns a str of HTML (3 lines, ~600 characters), e.g.
+    # '<section class="refs" aria-label="References"><p class="refs-h">References</p><ul>
+    #  <li><a href="https://comtradeplus.un.org/" target="_blank" rel="noopener"><span><b>UN Comtrade</b>Exports and imports
+    #  of goods by partner, every country, 2024</span></a></li> ... </ul></section>'
+    return f'<section class="refs" aria-label="References"><p class="refs-h">References</p><ul>{lines}</ul></section>'
+
+
+def money(bn, signed=False):
+    """Format billions of dollars the way the map does: 1234.5 -> '$1.23 tn', -57.8 -> '−$57.8 bn', 0.4 -> '$400 m'."""
+    sign = "−" if bn < 0 else ("+" if signed and bn > 0 else "")   # a real minus sign; "+" only when asked for
+    a = abs(bn)                                                # the size, without its sign
+    if a >= 1000:                                              # a trillion or more: in trillions, two decimals
+        text = f"{a / 1000:.2f} tn"                       #   = a space the line never breaks at
+    elif a >= 100:                                             # 100 bn or more: no decimals
+        text = f"{a:.0f} bn"
+    elif a >= 1:                                               # 1 to 100 bn: one decimal
+        text = f"{a:.1f} bn"
+    else:                                                      # under 1 bn: in millions
+        text = f"{round(a * 1000)} m"
+    glue = "⁠" if sign else ""                            # an invisible "word joiner": the line never breaks between sign and $
+    # returns a str, e.g. money(2850.3, True) -> '+$2.85 tn', money(-57.8) -> '−$57.8 bn', money(989.2) -> '$989 bn'
+    # (the space before tn/bn is a no-break space, so "−$3.04 tn" always stays on one line)
+    return sign + glue + "$" + text
+
+
+def tile(value, label, color=None):
+    """One headline number with its label; an optional dot names the side by its map colour."""
+    dot = f'<i class="dot" style="background:var({color})"></i>' if color else ""   # the side is in the text too, never colour alone
+    # returns a str of HTML, e.g. '<div class="kpi"><b><i class="dot" ...></i>+$2.85 tn</b><span>Total surplus · 64 countries</span></div>'
+    return f'<div class="kpi"><b>{dot}{escape(value)}</b><span>{escape(label)}</span></div>'
+
+
+def panel(number, question, finding, how, body, so=""):
+    """One numbered section: a question, its one-line finding, how to read it, the map or table, and what it tells us."""
+    how_html = f'<p class="how"><b>How to read it.</b> {how}</p>' if how else ""          # optional reading guide
+    so_html = f'<div class="so">{so}</div>' if so else ""                                  # optional takeaway
+    # returns a str of HTML, e.g. '<section class="panel"><p class="tag">01</p><h2>Where are the surpluses ...?</h2><p class="dek">64 countries ...'
+    return (f'<section class="panel"><p class="tag">{number:02d}</p><h2>{escape(question)}</h2>'
+            f'<p class="dek">{finding}</p>{how_html}{body}{so_html}</section>')
+
+
+def answer_text(s):
+    """The short answer at the top of the page, written from the numbers so it stays true after a re-run."""
+    lead = (f"<b>{escape(s['top_surplus_name'])}, more than anyone.</b> In {s['year']} it sold {money(s['top_surplus_bn'])} more goods "
+            f"than it bought, the largest surplus in the world. {escape(s['top_deficit_name'])} is the mirror image: it bought "
+            f"{money(-s['top_deficit_bn'])} more than it sold. ")                  # the two extremes
+    rest = (f"Altogether {s['surplus_count']} countries ran a surplus ({money(s['surplus_total_bn'], True)}) and "
+            f"{s['deficit_count']} a deficit ({money(s['deficit_total_bn'], True)}).")   # the whole world in one sentence
+    # returns a str of HTML, about 330 characters, e.g.
+    # '<b>China, more than anyone.</b> In 2024 it sold $989 bn more goods than it bought, the largest surplus in the world.
+    #  United States is the mirror image: it bought $1.29 tn more than it sold. Altogether 64 countries ran a surplus (+$2.85 tn) ...'
+    return lead + rest
+
+
+def links_text(s):
+    """One sentence that joins the two extremes through their #1 partners."""
+    text = (f"The biggest buyer of {escape(s['top_surplus_name'])}'s goods is {escape(s['top_surplus_buyer'])} "
+            f"({money(s['top_surplus_buyer_bn'])}); the biggest seller to {escape(s['top_deficit_name'])} is "
+            f"{escape(s['top_deficit_seller'])} ({money(s['top_deficit_seller_bn'])}).")
+    # returns a str of HTML, e.g. "The biggest buyer of China's goods is United States ($526 bn); the biggest seller to United States is Mexico ($510 bn)."
+    return text
+
+
+def conclusions(s):
+    """The 'What did we learn?' list, written from the numbers."""
+    items = [
+        (f"<b>{escape(s['top_surplus_name'])} has the largest trade surplus in goods:</b> {money(s['top_surplus_bn'], True)} in "
+         f"{s['year']}. {escape(s['top_deficit_name'])} has the largest deficit, {money(s['top_deficit_bn'], True)}."),
+        f"<b>The two ends are linked through their trade partners.</b> {links_text(s)}",
+        (f"<b>{s['surplus_count']} countries sold more than they bought, {s['deficit_count']} bought more than they sold.</b> "
+         f"The surpluses add up to {money(s['surplus_total_bn'], True)}, the deficits to {money(s['deficit_total_bn'], True)}."),
+        (f"<b>The world does not add up to zero</b> (gap {money(s['net_bn'], True)}): freight costs, timing and re-exports "
+         f"through hubs."),
+        (f"<b>Limits.</b> Goods only: tourism, finance and software are services and are not counted. {s['mirror_count']} countries "
+         f"did not report and are estimated from their partners' data. One year is a snapshot, not a trend."),
+    ]
+    # returns a list of 5 HTML strings, e.g.
+    # ['<b>China has the largest trade surplus in goods:</b> +$989 bn in 2024. United States has ...', '<b>The two ends are linked ...', ...]
+    return items
+
+
+def page_data(table, summary):
+    """Shrink the country table into the small JSON object the browser reads."""
+    countries = {}                                            # iso3 -> short dict (short keys keep the page small)
+    for iso3, row in table.iterrows():                        # one country at a time
+        has_capital = pd.notna(row["lat"])                    # do we know where its capital is?
+        countries[iso3] = {
+            "n": row["name"],                                 # name
+            "c": row["capital"],                              # capital name
+            "ll": [round(row["lon"], 3), round(row["lat"], 3)] if has_capital else None,  # [lon, lat]: D3 wants longitude first
+            "x": round(row["exports_bn"], 3),                 # exports, $ bn
+            "m": round(row["imports_bn"], 3),                 # imports, $ bn
+            "b": round(row["balance_bn"], 3),                 # balance, $ bn
+            "s": row["source"][0],                            # "r" = reported, "m" = mirror estimate
+            "tx": [[p, round(v, 3)] for p, v in row["top_exports"]],  # top 10 export destinations
+            "tm": [[p, round(v, 3)] for p, v in row["top_imports"]],  # top 10 import sources
+        }
+    by_map_id = {row["map_id"]: iso3 for iso3, row in table.iterrows()}  # map shape id -> iso3, to colour each shape
+    by_map_id.update(MAP_ALIASES)                             # Puerto Rico -> USA, Monaco -> FRA...
+    data = {"summary": summary, "countries": countries, "byMapId": by_map_id, "aliasIds": list(MAP_ALIASES)}
+    # returns a dict ready for json.dumps, e.g.:
+    # {"summary": {"year": 2024, "surplus_total_bn": 2650.3, ...},
+    #  "countries": {"ESP": {"n": "Spain", "c": "Madrid", "ll": [-3.703, 40.417], "x": 412.3, "m": 470.1,
+    #                        "b": -57.8, "s": "r", "tx": [["FRA", 64.1], ...], "tm": [["DEU", 51.2], ...]}, ...},
+    #  "byMapId": {"724": "ESP", "840": "USA", "630": "USA", ...}, "aliasIds": ["630", "850", "492", "438"]}
+    return data
+
+
+def build_page(table, summary, world):
+    """Assemble the standalone HTML page: Lab header, headline cards, the map panel and the explanation panels."""
+    s = summary                                               # short name: every number in the text comes from here
+    year = s["year"]                                          # the data year, e.g. 2024
+    data_json = json.dumps(page_data(table, summary), separators=(",", ":"))  # compact JSON text (no spaces)
+    world_json = json.dumps(world, separators=(",", ":"))     # the borders, also compact
+    script = (JS.replace("__DATA__", data_json.replace("</", "<\\/"))      # "<\/" so a name can never close the <script> early
+                .replace("__WORLD__", world_json.replace("</", "<\\/")))   # same for the borders
+
+    kpis = "".join([                                          # the four headline numbers under the header
+        tile(money(s["surplus_total_bn"], True), f"Total surplus · {s['surplus_count']} countries", "--pos-3"),
+        tile(money(s["deficit_total_bn"], True), f"Total deficit · {s['deficit_count']} countries", "--neg-3"),
+        tile(money(s["top_surplus_bn"], True), f"Largest surplus · {s['top_surplus_name']}"),
+        tile(money(s["top_deficit_bn"], True), f"Largest deficit · {s['top_deficit_name']}"),
+    ])
+    map_widget = (                                            # the map with its controls, legend, zoom buttons and country card
+        '<div class="mapwrap" id="mapwrap">'                  # the wrapper that goes full screen (all of the map widget)
+        '<div class="controls">'                              # row 1: Surpluses / Deficits, the picker, the total, Full screen
+        '<div class="seg" role="group" aria-label="Show countries">'
+        '<button type="button" data-side="surplus" aria-pressed="true">Surpluses</button>'
+        '<button type="button" data-side="deficit" aria-pressed="false">Deficits</button></div>'
+        '<label class="pick"><select id="pick" aria-label="Pick a country"></select></label>'
+        '<div class="total" id="total" aria-live="polite"></div>'
+        '<button type="button" class="fsbtn" id="fs" aria-pressed="false" aria-label="Open the map in full screen">'
+        f'<span class="off">{ICON_EXPAND}Full screen</span>'  # shown on the page: four corners pointing out
+        f'<span class="on">{ICON_CLOSE}<span>Exit<span class="long"> full screen</span></span></span>'  # in full screen: a cross
+        '</button></div>'
+        '<div id="view-map" class="mapbox">'                  # the map itself (D3 draws into the svg)
+        f'<svg id="map" role="img" aria-label="World map coloured by trade balance in goods, {year}"></svg>'
+        '<div class="tip" id="tip" role="tooltip"></div></div>'
+        '<div class="mapfoot"><div class="legend" id="legend"></div>'   # under the map: legend and zoom buttons
+        '<div class="zoom" role="group" aria-label="Zoom">'
+        '<button type="button" id="zin" aria-label="Zoom in">+</button>'
+        '<button type="button" id="zout" aria-label="Zoom out">&minus;</button>'
+        '<button type="button" id="zreset" aria-label="Reset the view">&#8634;</button></div></div>'
+        '<p class="note"><span class="mouse-only">Drag to move the map; Ctrl + scroll or the + / &minus; buttons to zoom. '
+        'Hover over a country to read its numbers.</span>'
+        '<span class="touch-only">One finger scrolls the page; two fingers move and zoom the map, or use + / &minus;.</span></p>'
+        '<div class="detail" id="panel" aria-live="polite"></div>'   # the country card, filled by the JavaScript
+        '</div>'                                              # end of the full-screen wrapper
+    )
+    gloss = '<dl class="gloss">' + "".join(f"<div><dt>{t}</dt><dd>{d}</dd></div>" for t, d in [   # the key ideas, in plain words
+        ("Trade balance", "Exports minus imports. Above zero is a <b>surplus</b>: the country sells more than it buys. "
+                          "Below zero is a <b>deficit</b>: it buys more than it sells."),
+        ("Goods only", "Tourism, finance and software are services, and they are not in these numbers."),
+        ("Top partners", f"Comtrade splits each country's trade by partner. The page keeps the top {TOP_N} export destinations "
+                         f"and the top {TOP_N} import sources; the map draws arrows to the top 3."),
+        ("Mirror estimate", f"A country that did not send its own data is estimated from its partners: its exports are what "
+                            f"everyone else says they imported from it, and vice versa. {s['mirror_count']} countries are "
+                            f"estimated this way."),
+        ("FOB and CIF", "Exports are valued FOB (free on board, at the seller's border); imports are valued CIF, which "
+                        "includes freight and insurance."),
+    ]) + "</dl>"
+    take = '<ol class="take">' + "".join(f"<li>{x}</li>" for x in conclusions(s)) + "</ol>"   # the numbered takeaways
+    names = [escape(n) for n in s["mirror_examples"]]         # the biggest traders among the estimated countries
+    examples = ", ".join(names[:-1]) + " and " + names[-1] if len(names) > 1 else "".join(names)   # "A, B, C and D"
+
+    panels = "".join([
+        panel(1, "Where are the surpluses and the deficits?",
+              f"{s['surplus_count']} countries sold more goods than they bought in {year}; {s['deficit_count']} bought more than they sold.",
+              f"Balance = exports &minus; imports of goods in {year}, in US dollars. Blue = surplus, red = deficit; darker = bigger. "
+              f"<span class=\"verb\">Click</span> a country (or pick it from the list) and red and blue switch off: green = its top 3 "
+              f"buyers, purple = its top 3 sellers. Arrows run seller &rarr; buyer, numbered 1-2-3 where they end. "
+              f"A 2nd click shows the other side, a 3rd goes back to the world map. The top 10 are in the table under the map.",
+              map_widget,
+              f"<p>Follow the two extremes. {links_text(s)}</p>"),
+        panel(2, "Which countries top each list?",
+              f"{escape(s['top_surplus_name'])} leads with {money(s['top_surplus_bn'], True)}; {escape(s['top_deficit_name'])} is last "
+              f"with {money(s['top_deficit_bn'], True)}.",
+              "Every country, biggest surplus first and biggest deficit last, in US dollars. The last column says whether the "
+              "country reported its own figures or was estimated from its partners' data (hidden on a phone). The table scrolls "
+              "inside its box.",
+              '<div class="allc"><table id="table"></table></div>',
+              f"<p>{s['mirror_count']} of the {s['country_count']} countries did not report their own {year} figures, among them "
+              f"{examples}. Their numbers are mirror estimates built from what their partners reported.</p>"),
+        panel(3, "What do surplus, deficit and “mirror data” mean?", "Trade balance = exports &minus; imports.",
+              "", gloss,
+              f"<p><b>Why the world does not add up to zero.</b> In theory one country's export is another's import, so all surpluses "
+              f"and deficits should cancel out. Here the surpluses add up to {money(s['surplus_total_bn'], True)} and the deficits to "
+              f"{money(s['deficit_total_bn'], True)}, a gap of {money(s['net_bn'], True)}: freight costs, timing and re-exports "
+              f"through hubs.</p>"),
+        panel(4, "What did we learn?", "Five takeaways.", "", take),   # always the last panel
+    ])
+    refs = references(year)                                   # the quiet source list that follows the last panel
+
+    html = f"""<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Trade Surplus Map</title>
+<meta name="description" content="World map of trade surpluses and deficits in goods, {year}, with each country's top trading partners.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="{FONTS_URL}" rel="stylesheet">
+<style>{CSS}</style>
+</head>
+<body>
+<header class="band"><div class="in">
+<a class="back" href="../index.html">&larr; Macro Quant Lab</a>
+<p class="eyebrow">Trade surpluses and deficits</p>
+<h1>Who sells more to the world than it buys?</h1>
+<p class="answer">{answer_text(s)}</p>
+<p class="meta">Trade in goods, {year} · UN Comtrade · {s['mirror_count']} countries estimated from partners' data</p>
+</div></header>
+<main class="in">
+<div class="kpis top">{kpis}</div>
+{panels}
+{refs}
+</main>
+<footer><div class="in">Generated by trade_balance.py from UN Comtrade ({year}, goods). Capitals: World Bank; borders: Natural Earth.
+Learning project, not investment advice.</div></footer>
+<script src="lib/d3.min.js" integrity="sha384-CjloA8y00+1SDAUkjs099PVfnY2KmDC2BZnws9kh8D/lX1s46w6EPhpXdqMfjK6i"></script>
+<script src="lib/topojson-client.min.js" integrity="sha384-Ukv1p/xTma6P4/2bY5KzWBw+ydSpXmhCMtyciIQVDJ1RmOxtCYNMF1uXT9T63H67"></script>
+<script>{script}</script>
 </body>
 </html>
 """
+    # returns a str: the whole web page (~900 KB, most of it the map borders), e.g.
+    # '<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n...<h1>Who sells more to the world than it buys?</h1>...'
+    # 4 panels (map, all countries, key ideas, "What did we learn?"), then the References list, the footer and the scripts
+    return html
 
 
 if __name__ == "__main__":

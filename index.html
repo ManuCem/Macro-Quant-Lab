@@ -4,141 +4,174 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Macro Quant Lab</title>
+<!-- Homepage: deep green and brass header, one hand-picked featured study shown large, the rest in a grid -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-  /* Colours as tokens: light by default, dark when the viewer's system is dark */
+  /* Graphite header band, light page; dark mode darkens the page. Each project card carries its own
+     colour (--c-l light, --c-d dark, set on the card) for its hover highlight and topic label */
   :root {
     color-scheme: light dark;
-    --page: #f9f9f7;  --surface: #fcfcfb;  --ink: #0b0b0b;  --ink-2: #52514e;
-    --border: #e1e0d9;  --hover: #c3c2b7;
+    --band: #17191f;  --band-ink: #e4e6ea;  --brass: #c49a45;  --green: #c49a45;  /* default hover colour */
+    --page: #f6f5f2;  --surface: #ffffff;  --ink: #16181d;  --ink-2: #555a63;  --line: #e2e0da;
   }
   @media (prefers-color-scheme: dark) {
-    :root { --page: #0d0d0d; --surface: #1a1a19; --ink: #ffffff; --ink-2: #c3c2b7;
-            --border: #2c2c2a; --hover: #4a4a46; }
+    :root { --band: #101115; --page: #0f1012; --surface: #18191d; --ink: #ececee; --ink-2: #aaadb5;
+            --line: #2a2c31; --brass: #d8b26a; --green: #d8b26a; }
   }
-
+  .feature, .card { --c: var(--c-l, var(--green)); }                   /* the card's project colour */
+  @media (prefers-color-scheme: dark) { .feature, .card { --c: var(--c-d, var(--green)); } }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--page); color: var(--ink);
-         font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+         font: 16px/1.6 "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .in { max-width: 1100px; margin: 0 auto; padding: 0 20px; }
+  .serif { font-family: "DM Serif Display", Georgia, serif; font-weight: 400; }
 
-  /* One centred column; the side padding keeps a gutter on phones */
-  main { max-width: 760px; margin: 0 auto; padding: 56px 20px 40px; }
+  /* Header band with title, intro and GitHub button */
+  header { background: var(--band); color: var(--band-ink); padding: 56px 0 120px; }
+  .eyebrow { color: var(--brass); font-size: 13px; letter-spacing: .14em; text-transform: uppercase; font-weight: 700; margin: 0 0 14px; }
+  h1 { color: #fff; font-size: clamp(38px, 7vw, 60px); line-height: 1.05; margin: 0 0 16px; }
+  .lead { max-width: 56ch; font-size: 18px; margin: 0 0 28px; }
+  .gh { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 20px;
+        border: 1px solid var(--brass); color: #fff; border-radius: 999px; text-decoration: none; font-weight: 700; font-size: 15px; }
+  .gh:hover { background: var(--brass); color: var(--band); }
+  .gh-logo { width: 20px; height: 20px; fill: currentColor; flex: none; }   /* GitHub mark, takes the text colour */
+  footer .gh-logo { width: 16px; height: 16px; vertical-align: -3px; margin-right: 6px; }
 
-  h1 { font-size: 32px; line-height: 1.2; margin: 0 0 8px; letter-spacing: -0.01em; }
-  .lead { margin: 0 0 40px; color: var(--ink-2); max-width: 56ch; }
+  /* Featured study overlaps the band (negative margin) */
+  .feature { margin-top: -84px; display: grid; grid-template-columns: 1.3fr 1fr; background: var(--surface);
+             border: 1px solid var(--line); border-radius: 14px; overflow: hidden; color: inherit; text-decoration: none;
+             box-shadow: 0 20px 48px rgba(0,0,0,.12); }
+  .feature .img { position: relative; background: var(--band); min-height: 340px; overflow: hidden; }
+  /* image fills the left half without dictating its height */
+  .feature .img img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; }
+  .feature .txt { padding: 36px; display: flex; flex-direction: column; gap: 12px; justify-content: center; }
+  .badge { align-self: flex-start; font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+           color: var(--band); background: #e9dcbc; padding: 4px 10px; border-radius: 4px; }
+  .feature h2 { font-size: 34px; line-height: 1.1; margin: 0; }
+  .feature p { margin: 0; color: var(--ink-2); }
 
-  /* GitHub button under the intro; 44px tall so it is easy to tap on a phone */
-  .repo { margin: -24px 0 32px; }
-  .repo a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px;
-            border: 1px solid var(--border); border-radius: 8px; background: var(--surface);
-            color: var(--ink); font-weight: 600; font-size: 15px; text-decoration: none; }
-  .repo a:hover { border-color: var(--hover); }
-  .repo a:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  /* Hover animation shared by the featured study and every card:
+     border turns the header green, a soft green ring appears and the card lifts 4px */
+  .feature, .card { transition: border-color .25s, box-shadow .25s, transform .25s; }
+  @media (hover: hover) {   /* mouse only: on phones a tap would leave the card stuck in its hover look */
+    .feature:hover, .card:hover {
+      border-color: var(--c);
+      box-shadow: 0 0 0 1px var(--c), 0 16px 36px rgba(0, 0, 0, .28);
+      transform: translateY(-4px);
+    }
+  }
+  .feature .img img { transition: transform .4s; transform-origin: top center; }
+  .feature:hover .img img { transform: scale(1.03); }
 
-  /* Cards: two columns on wide screens, stacked on narrow ones */
-  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
-  .card { display: flex; flex-direction: column; gap: 0; overflow: hidden;
-          background: var(--surface); border: 1px solid var(--border);
-          border-radius: 10px;
-          color: inherit; text-decoration: none;
-          transition: border-color .15s, transform .15s, box-shadow .15s; }
-  .card:hover { border-color: var(--hover); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.08); }
-  .card:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
-  .card .thumb { aspect-ratio: 16 / 9; background: #ffffff; overflow: hidden;  /* always white, never black, even in dark mode */
-                 border-bottom: 3px solid var(--accent); }
-  .card .thumb img { width: 100%; height: 100%; object-fit: cover; display: block;
-                      transition: transform .3s; }
-  .card:hover .thumb img { transform: scale(1.04); }
-  .card .body { display: flex; flex-direction: column; gap: 6px; padding: 18px 20px 18px; flex: 1; }
-  .card h2 { font-size: 19px; margin: 0; }
+  /* Section title */
+  .section { display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+             margin: 64px 0 20px; border-bottom: 1px solid var(--line); padding-bottom: 12px; }
+  .section h3 { font-size: 28px; margin: 0; }
+  .section span { color: var(--ink-2); font-size: 14px; }
+
+  /* Grid of the other studies */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px; padding-bottom: 64px; }
+  /* Each card is a framed box so its border can light up on hover; the whole card is the link */
+  .card { display: flex; flex-direction: column; color: inherit; text-decoration: none;
+          background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  /* Most previews are tall page screenshots: a 4:3 box anchored to the top shows the title and first chart, not a zoomed-in middle */
+  .card .img { display: block; aspect-ratio: 4 / 3; background: var(--band); overflow: hidden; border-bottom: 1px solid var(--line); }
+  .card .txt { display: block; padding: 4px 20px 22px; }
+  .card .img img { width: 100%; height: 100%; object-fit: cover; object-position: top center; display: block;
+                   transform-origin: top center; transition: transform .3s; }
+  .card .img img.wide { object-fit: contain; object-position: center; }   /* wide 16:9 preview (trade map): show it whole */
+  .card:hover .img img { transform: scale(1.03); }
+  .card .topic { margin: 16px 0 4px; font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--c); }
+  .card h4 { font-size: 23px; line-height: 1.2; margin: 0 0 6px; }
+  .card h4 { transition: color .25s; }
+  .card:hover h4 { color: var(--c); }
   .card p { margin: 0; color: var(--ink-2); font-size: 15px; }
-  .card .go { margin-top: auto; padding-top: 14px; font-weight: 600; color: var(--ink); }
-  .card:hover .go span { display: inline-block; transform: translateX(4px); }
-  .go span { transition: transform .15s; }
+  a:focus-visible { outline: 3px solid var(--brass); outline-offset: 3px; }
 
-  footer { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--border);
-           color: var(--ink-2); font-size: 14px; }
-  footer a { color: inherit; display: inline-block; padding: 12px 4px; margin: -12px -4px; }  /* bigger tap area, same look */
+  footer { background: var(--band); color: var(--band-ink); font-size: 14px; }
+  footer .in { padding: 22px 20px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+  footer a { color: #fff; display: inline-block; padding: 12px 4px; margin: -12px -4px; }
+
+  @media (max-width: 760px) {
+    header { padding: 40px 0 96px; }
+    .feature { grid-template-columns: 1fr; margin-top: -64px; }
+    .feature .img { min-height: 0; aspect-ratio: 16 / 9; }
+    .feature .txt { padding: 24px 20px; }
+    .feature h2 { font-size: 28px; }
+    .section { margin-top: 48px; }
+  }
 </style>
 </head>
 <body>
-<main>
-  <h1>Macro Quant Lab</h1>
-  <p class="lead">A learning lab for macroeconomics, machine learning and quantitative
-     trading. Pick an experiment below.</p>
-  <p class="repo"><a href="https://github.com/ManuCem/Macro-Quant-Lab" target="_blank" rel="noopener">View the code on GitHub <span aria-hidden="true">&#8599;</span></a></p>
+<header>
+  <div class="in">
+    <p class="eyebrow">Macroeconomics · Machine learning · Quant trading</p>
+    <h1 class="serif">Macro Quant Lab</h1>
+    <p class="lead">Personal research lab at the intersection of macroeconomics, machine learning and quantitative trading — a space to test ideas and see what works.</p>
+    <a class="gh" href="https://github.com/ManuCem/Macro-Quant-Lab" target="_blank" rel="noopener">
+      <svg class="gh-logo" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+      View the code on GitHub <span aria-hidden="true">&#8599;</span></a>
+  </div>
+</header>
 
-  <nav class="cards" aria-label="Experiments">
-    <!-- Card 1: goes straight to the VIX dashboard -->
-    <a class="card" href="VIX/output/shocks.html" style="--accent:#2a78d6">
-      <span class="thumb"><img src="VIX/output/shocks_preview.png" alt="" loading="lazy" width="640" height="360"></span>
-      <span class="body">
-        <h2>VIX vs realized volatility</h2>
-        <p>Was the VIX right? Its forecast against the volatility that actually followed,
-           around the dot-com crash, 2008, Covid and the 2025 tariff shock.</p>
-        <span class="go">Open dashboard <span aria-hidden="true">&rarr;</span></span>
-      </span>
+<main class="in">
+  <!-- Featured study: chosen by hand (not automatically the newest); currently Nasdaq 100 vs bond yields -->
+  <a class="feature" href="nasdaq-bonds/nasdaq_bonds.html" style="--c-l:#4a7fe0;--c-d:#7fa8f0">
+    <span class="img"><img src="nasdaq-bonds/nasdaq_bonds_preview.png" alt="" width="640" height="360"></span>
+    <span class="txt">
+      <span class="badge">Featured study</span>
+      <h2 class="serif">Nasdaq 100 vs bond yields</h2>
+      <p>Is money rotating between big tech and bonds? Rolling correlations, a day-by-day
+         scatter and what bonds did on tech's bad days.</p>
+    </span>
+  </a>
+
+  <div class="section"><h3 class="serif">All studies</h3><span>5 more</span></div>
+
+  <section class="grid" aria-label="Studies">
+    <a class="card" href="VIX/output/shocks.html" style="--c-l:#d0506c;--c-d:#ec8098">
+      <span class="img"><img src="VIX/output/shocks_preview.png" alt="" loading="lazy" width="640" height="360"></span>
+      <span class="txt"><span class="topic">Volatility</span>
+      <h4 class="serif">VIX vs realized volatility</h4>
+      <p>Was the VIX right? Its forecast against the volatility that actually followed,
+         around the dot-com crash, 2008, Covid and the 2025 tariff shock.</p></span>
     </a>
-
-    <!-- Card 2: goes to a second menu with the ECB and Fed pages -->
-    <a class="card" href="Rates_and_Phillips/index.html" style="--accent:#eb6834">
-      <span class="thumb"><img src="Rates_and_Phillips/rates_phillips_preview.png" alt="" loading="lazy" width="640" height="360"></span>
-      <span class="body">
-        <h2>Interest rates &amp; Phillips curve</h2>
-        <p>ECB and Fed policy rates, and whether near-zero rates brought a recovery in
-           2008 and Covid (Phillips curve view).</p>
-        <span class="go">Open the section <span aria-hidden="true">&rarr;</span></span>
-      </span>
+    <a class="card" href="Rates_and_Phillips/index.html" style="--c-l:#2a9db0;--c-d:#5cc4d2">
+      <span class="img"><img src="Rates_and_Phillips/rates_phillips_preview.png" alt="" loading="lazy" width="640" height="360"></span>
+      <span class="txt"><span class="topic">Monetary policy</span>
+      <h4 class="serif">Interest rates &amp; Phillips curve</h4>
+      <p>ECB and Fed policy rates, and whether near-zero rates brought a recovery in
+         2008 and Covid (Phillips curve view).</p></span>
     </a>
-
-    <!-- Card 3: world map of trade surpluses and deficits -->
-    <a class="card" href="Deficit_Surplus/trade_balance.html" style="--accent:#1baf7a">
-      <span class="thumb"><img src="Deficit_Surplus/trade_balance_preview.png" alt="" loading="lazy" width="640" height="360"></span>
-      <span class="body">
-        <h2>Trade surplus &amp; deficit map</h2>
-        <p>Who sells more to the world than it buys? Every country's trade balance in goods,
-           and arrows to its top export and import partners.</p>
-        <span class="go">Open the map <span aria-hidden="true">&rarr;</span></span>
-      </span>
+    <a class="card" href="Deficit_Surplus/trade_balance.html" style="--c-l:#8571e0;--c-d:#ad9cf5">
+      <span class="img"><img src="Deficit_Surplus/trade_balance_preview.png" alt="" loading="lazy" width="640" height="360"></span>
+      <span class="txt"><span class="topic">International trade</span>
+      <h4 class="serif">Trade surplus &amp; deficit map</h4>
+      <p>Who sells more to the world than it buys? Every country's trade balance in goods,
+         and arrows to its top export and import partners.</p></span>
     </a>
-
-    <!-- Card 4: France and Italy bond spreads over Germany, CDS, and the Oct 2026 protests -->
-    <a class="card" href="Yield_Curve/sovereign_spreads.html" style="--accent:#eda100">
-      <span class="thumb"><img src="Yield_Curve/sovereign_spreads_preview.png" alt="" loading="lazy" width="640" height="360"></span>
-      <span class="body">
-        <h2>France vs Italy risk premium</h2>
-        <p>What France and Italy pay over Germany to borrow, credit default swaps, and the
-           October 2026 protests in both countries.</p>
-        <span class="go">Open the page <span aria-hidden="true">&rarr;</span></span>
-      </span>
+    <a class="card" href="Yield_Curve/sovereign_spreads.html" style="--c-l:#cf6e3a;--c-d:#ec9665">
+      <span class="img"><img src="Yield_Curve/sovereign_spreads_preview.png" alt="" loading="lazy" width="640" height="360"></span>
+      <span class="txt"><span class="topic">Sovereign debt</span>
+      <h4 class="serif">France vs Italy risk premium</h4>
+      <p>What France and Italy pay over Germany to borrow, credit default swaps, and the
+         October 2026 protests in both countries.</p></span>
     </a>
-
-    <!-- Card 5: real yields, TIPS, bonds and gold (folder tips-gold-bonds) -->
-    <a class="card" href="tips-gold-bonds/tips_gold_bonds.html" style="--accent:#eda100">
-      <span class="thumb"><img src="tips-gold-bonds/tips_gold_bonds_preview.png" alt="" loading="lazy" width="640" height="360"></span>
-      <span class="body">
-        <h2>Gold vs real yields</h2>
-        <p>Why do bonds and gold move with the real yield? TIPS, expected inflation and CPI
-           explained step by step, with sliders to try it yourself.</p>
-        <span class="go">Open the page <span aria-hidden="true">&rarr;</span></span>
-      </span>
+    <a class="card" href="tips-gold-bonds/tips_gold_bonds.html" style="--c-l:#c49a45;--c-d:#d8b26a">
+      <span class="img"><img src="tips-gold-bonds/tips_gold_bonds_preview.png" alt="" loading="lazy" width="640" height="360"></span>
+      <span class="txt"><span class="topic">Fixed income · Commodities</span>
+      <h4 class="serif">Gold vs real yields</h4>
+      <p>Why do bonds and gold move with the real yield? TIPS, expected inflation and CPI
+         explained step by step, with sliders to try it yourself.</p></span>
     </a>
-
-    <!-- Card 6: Nasdaq 100 vs bond yields, rotation between big tech, bonds and gold (folder nasdaq-bonds) -->
-    <a class="card" href="nasdaq-bonds/nasdaq_bonds.html" style="--accent:#2a78d6">
-      <span class="thumb"><img src="nasdaq-bonds/nasdaq_bonds_preview.png" alt="" loading="lazy" width="640" height="360"></span>
-      <span class="body">
-        <h2>Nasdaq 100 vs bond yields</h2>
-        <p>Is money rotating between big tech, bonds and gold? Rolling correlations, a day-by-day
-           scatter and where the money went on tech's bad days.</p>
-        <span class="go">Open dashboard <span aria-hidden="true">&rarr;</span></span>
-      </span>
-    </a>
-
-  </nav>
-
-  <footer>
-    Code on <a href="https://github.com/ManuCem/Macro-Quant-Lab">GitHub</a>.
-  </footer>
+  </section>
 </main>
+
+<footer><div class="in">
+  <span>Macro Quant Lab</span>
+  <span>Code on <a href="https://github.com/ManuCem/Macro-Quant-Lab"><svg class="gh-logo" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>GitHub</a></span>
+</div></footer>
 </body>
 </html>
