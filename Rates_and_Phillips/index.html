@@ -32,6 +32,9 @@
   /* Header band: back link, topic label, the question, what the section covers, GitHub button */
   header { background: var(--band); color: var(--band-ink); padding: 8px 0 120px; }
   .back { display: inline-flex; align-items: center; min-height: 44px; color: var(--band-ink); text-decoration: none; font-size: 14px; }
+  /* back link on the left, the date this section was last updated on the right */
+  .toprow { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .upd { display: inline-flex; align-items: center; min-height: 44px; font-size: 13px; color: var(--band-ink); opacity: .72; white-space: nowrap; }
   .back:hover { color: #fff; }
   .eyebrow { color: var(--brass); font-size: 13px; letter-spacing: .14em; text-transform: uppercase; font-weight: 700; margin: 24px 0 14px; }
   h1 { color: #fff; font-size: clamp(34px, 6vw, 54px); line-height: 1.08; margin: 0 0 16px; max-width: 20ch; }
@@ -110,7 +113,7 @@
 <header>
   <div class="in">
     <!-- ../index.html = the home page, one folder up -->
-    <a class="back" href="../index.html">&larr; Macro Quant Lab</a>
+    <div class="toprow"><a class="back" href="../index.html">&larr; Macro Quant Lab</a><span class="upd">Updated 16 Oct 2026</span></div>
     <p class="eyebrow">Monetary policy</p>
     <h1 class="serif">Where are interest rates, and did cheap money work?</h1>
     <p class="lead">Policy rates of the two biggest central banks, and how US inflation and unemployment moved with interest rates in 2008 and Covid.</p>

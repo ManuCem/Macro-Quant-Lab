@@ -115,6 +115,12 @@ Every project page (one per study, like `nasdaq-bonds/nasdaq_bonds.html`) uses t
   4. **What it tells us:** a short paragraph with a brass left border. It interprets the result, adds context, or explains why it matters.
 - **A key-ideas panel** explains the theory and the terms (for example correlation, basis point, rolling window) in plain language.
 - **Last panel, "What did we learn?":** numbered takeaways, ending with the **limits** (sample size, correlation is not causation, and so on).
+- **"Updated <date>" at the top right of the header band**, on the same line as the back link
+  (`<div class="toprow">` holding `a.back` and `span.upd`): the date this study was last changed.
+  The date is read from git, never invented: `git log -1 --format=%cs c975231^ -- <folder>`, where
+  `c975231` is the 31 Oct 2026 site-wide restyle — that one commit touched all seven pages, so the
+  plain `git log -1 -- <folder>` returns the same date for every study and says nothing. Re-read it
+  after a study is rebuilt and committed. It goes on the project pages, not on the homepage cards.
 - **References, not a panel:** where the data comes from must not take centre stage. After the last panel, put a small, quiet "References" list: muted small text, no panel box, no question heading, no "How to read it". Just a few lines (source name, what it gave, link), each link still at least 40px tall to tap. Press articles go there too, as one line each.
 - Every number in the text is computed in Python from the data, so the text stays true after a re-run. Never type a number by hand.
 

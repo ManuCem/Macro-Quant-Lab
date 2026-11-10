@@ -553,6 +553,9 @@ a{color:inherit}
 .in{max-width:1000px;margin:0 auto;padding:0 max(20px,env(safe-area-inset-right)) 0 max(20px,env(safe-area-inset-left))}
 .band{background:var(--band);color:var(--band-ink);padding:8px 0 96px}
 a.back{display:inline-flex;align-items:center;min-height:44px;color:var(--band-ink);text-decoration:none;font-size:14px}
+/* back link on the left, the date this study was last updated on the right */
+.toprow{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.upd{display:inline-flex;align-items:center;min-height:44px;font-size:13px;color:var(--band-ink);opacity:.72;white-space:nowrap}
 a.back:hover{color:#fff}
 .eyebrow{margin:24px 0 12px;color:var(--brass);font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase}
 h1{margin:0;color:#fff;font-size:clamp(32px,5.5vw,50px);line-height:1.08;max-width:20ch}
@@ -1005,7 +1008,7 @@ def build_page(windows, data):
 </head>
 <body>
 <header class="band"><div class="in">
-<a class="back" href="../../index.html">&larr; Macro Quant Lab</a>
+<div class="toprow"><a class="back" href="../../index.html">&larr; Macro Quant Lab</a><span class="upd">Updated 6 Oct 2026</span></div>
 <p class="eyebrow">VIX vs realized volatility</p>
 <h1>Was the VIX right about four market shocks?</h1>
 <p class="answer">{answer_text(card)}</p>
