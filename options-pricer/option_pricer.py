@@ -264,7 +264,7 @@ def main():
 
 ECHARTS_URL = "https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"  # Apache ECharts, a fixed version
 FONTS_URL = "https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;700&display=swap"
-UPDATED = "9 Nov 2026"                   # the date this study was last changed (new, not committed yet); after a commit, re-read it with
+UPDATED = "12 Nov 2026"                   # the date this study was last changed (new, not committed yet); after a commit, re-read it with
                                           # git log -1 --format=%cs -- options-pricer
 CPP_URL = "https://github.com/ManuCem/Macro-Quant-Lab/blob/main/options-pricer/option_pricer.cpp"   # the C++ file on GitHub
 
