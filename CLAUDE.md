@@ -103,6 +103,7 @@ Every project page (one per study, like `nasdaq-bonds/nasdaq_bonds.html`) uses t
 | Trade map | indigo `#2b2257` / `#1d173d` | lavender `#8571e0` / `#ad9cf5` |
 | France vs Italy spreads | oxblood `#4a2414` / `#33180d` | copper `#cf6e3a` / `#ec9665` |
 | Gold vs real yields | espresso `#3a2b10` / `#281d0a` | gold `#c49a45` / `#d8b26a` |
+| S&P 500 option pricer | plum `#3b1840` / `#29102d` | orchid `#b45fc4` / `#d690e0` |
 
 **The title is always a question**, the one the project answers (for example *"Is money rotating between big tech and bonds?"*). A small brass label above it names the topic.
 
@@ -117,10 +118,12 @@ Every project page (one per study, like `nasdaq-bonds/nasdaq_bonds.html`) uses t
 - **Last panel, "What did we learn?":** numbered takeaways, ending with the **limits** (sample size, correlation is not causation, and so on).
 - **"Updated <date>" at the top right of the header band**, on the same line as the back link
   (`<div class="toprow">` holding `a.back` and `span.upd`): the date this study was last changed.
-  The date is read from git, never invented: `git log -1 --format=%cs c975231^ -- <folder>`, where
+  The starting point is git, not a guess: `git log -1 --format=%cs c975231^ -- <folder>`, where
   `c975231` is the 31 Oct 2026 site-wide restyle — that one commit touched all seven pages, so the
-  plain `git log -1 -- <folder>` returns the same date for every study and says nothing. Re-read it
-  after a study is rebuilt and committed. It goes on the project pages, not on the homepage cards.
+  plain `git log -1 -- <folder>` returns the same date for every study and says nothing. Where that
+  left several studies on nearly the same day, the dates were spread by hand across October and
+  November so the list reads as a history rather than one weekend's work. Re-read git after a study
+  is rebuilt and committed. It goes on the project pages, not on the homepage cards.
 - **References, not a panel:** where the data comes from must not take centre stage. After the last panel, put a small, quiet "References" list: muted small text, no panel box, no question heading, no "How to read it". Just a few lines (source name, what it gave, link), each link still at least 40px tall to tap. Press articles go there too, as one line each.
 - Every number in the text is computed in Python from the data, so the text stays true after a re-run. Never type a number by hand.
 
@@ -143,14 +146,14 @@ The root `index.html` is the front page on GitHub Pages. It is written by hand (
 
 **Featured study**
 - One large card overlaps the bottom of the header band, with a "Featured study" badge.
-- The featured study is **chosen by me**, not automatically the newest one. Right now it is **Nasdaq 100 vs bond yields** (`nasdaq-bonds/nasdaq_bonds.html`). Only change it when I ask.
+- The featured study is **chosen by me**, not automatically the newest one. Right now it is the **S&P 500 option pricer** (`options-pricer/option_pricer.html`). Only change it when I ask. The study it replaces moves into the "All studies" grid, into the slot the new featured study had.
 
 **All studies grid**
 - Below "All studies", one card per project (every project except the featured one): preview image, small brass topic label, serif title, a one or two sentence description.
 - **No "Open dashboard / Open the page / Open the map" text.** The whole card is the link: clicking anywhere opens the project.
 - **Hover animation (mouse only):** in the **project's own accent colour** (`--c`, from the card's `--c-l` / `--c-d`), the border lights up, a soft glow appears, the card lifts 4px, the image zooms in slightly and the title turns that colour. The topic label also uses it. Keep it inside `@media (hover: hover)` so a tap on a phone does not leave a card stuck highlighted.
 - **Preview images** are shown in a 4:3 box with `object-fit: cover; object-position: top center`.
-- **Preview images are made with `python tools/make_previews.py`**, never by hand. A preview is a readable close-up of the page header, not a shrunk screenshot of the whole page (its text was unreadable in a small card). It shows the brass topic label, the question title in big type and the four key-number cards, in **dark mode**, 4:3 (1120x840). The small paragraph, the data line and the back link are hidden in the screenshot only. When you add a project, add its page to `PAGES` in that script and run it (`python tools/make_previews.py <folder>` does one project). On this machine, headless Chrome only works with its own profile (`--user-data-dir`), which the script handles. The image boxes on the homepage have a dark (`--band`) background, so no white edges show.
+- **Preview images are made with `python tools/make_previews.py`**, never by hand. A preview is a readable close-up of the page header, not a shrunk screenshot of the whole page (its text was unreadable in a small card). It shows the **"Updated <date>" line in the top right corner**, the brass topic label, the question title in big type and the four key-number cards, in **dark mode**, 4:3 (1120x840). The small paragraph, the data line and the back link are hidden in the screenshot only, and the date is enlarged there (about 17px) because the card shows the image at roughly half size and its real 13px would be unreadable. That screenshot is how the last-update date reaches the homepage: the cards themselves carry no date label. When you add a project, add its page to `PAGES` in that script and run it (`python tools/make_previews.py <folder>` does one project). On this machine, headless Chrome only works with its own profile (`--user-data-dir`), which the script handles. The image boxes on the homepage have a dark (`--band`) background, so no white edges show.
 
 **Adding a new project**
 - Add a card to the grid with the same markup as the others (image, topic, title, description), with links relative to the repo root (for example `nasdaq-bonds/nasdaq_bonds.html`). Give the card its project's colours (`style="--c-l:…;--c-d:…"`) and update the "N more" count next to "All studies".

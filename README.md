@@ -102,6 +102,21 @@ A personal research lab at the intersection of macroeconomics, machine learning 
 
 **Conclusion:** the real yield is the hidden price behind both bonds and gold. When it rises, bonds and gold usually fall; when it falls, both get more attractive.
 
+### [What should an S&P 500 option cost today?](https://manucem.github.io/Macro-Quant-Lab/options-pricer/option_pricer.html)
+
+| Option (12 Nov 2026) | S&P 500 (S) | Strike (K) | T-bill (r) | VIX (σ) | Days (T) | Black-Scholes price | Delta | Market price (mid) | Model − market |
+|---|---|---|---|---|---|---|---|---|---|
+| Call | 7,628.24 | 7,630 | 4.125% | 17.48% | 30 | $164.59 | 0.54 | $129.90 (29 days) | +$31.69 (+24.4%) |
+| Put | 7,628.24 | 7,630 | 4.125% | 17.48% | 30 | $140.52 | −0.46 | — | — |
+
+- A 30-day at-the-money call costs about 2.2% of the index, a put about 1.8%.
+- The call moves about $0.54 and the put −$0.46 for each point the S&P 500 moves; the two deltas always differ by 1.
+- Put-call parity holds to 9 decimal places: call − put = S − K·e^(−rT) = 24.065.
+- The closest real call (strike 7,630, 11 Dec 2026) trades at $129.90; the model price for that contract ($161.59) is 24.4% above it.
+- The same maths in a beginner C++ file (`option_pricer.cpp`) prints the same call, put and delta to 4 decimals.
+
+**Conclusion:** Black-Scholes turns five numbers into a price, but the price is only as good as its volatility input: the VIX sits above the volatility the market prices into an at-the-money option, so the model comes out too expensive.
+
 ## Automation
 
 An **n8n** workflow turns the lab into a Telegram bot. A command in Telegram starts the workflow, which connects to a server over SSH and runs a model script (the 30-year Treasury yield or the S&P 500 direction model). The script pulls the latest market data and makes its forecast. An AI model then turns the raw output into a short brief, and the bot replies in Telegram.

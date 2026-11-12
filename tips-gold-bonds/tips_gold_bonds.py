@@ -511,7 +511,7 @@ def build_page(model):
 </head>
 <body>
 <header class="band"><div class="in">
-<div class="toprow"><a class="back" href="../index.html">&larr; Macro Quant Lab</a><span class="upd">Updated 25 Oct 2026</span></div>
+<div class="toprow"><a class="back" href="../index.html">&larr; Macro Quant Lab</a><span class="upd">Updated 4 Nov 2026</span></div>
 <p class="eyebrow">Real yields · TIPS · Gold</p>
 <h1>What quietly drives bonds and gold?</h1>
 <p class="answer">{answer_text(m)}</p>

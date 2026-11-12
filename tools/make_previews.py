@@ -2,9 +2,11 @@
 Make the preview images the homepage cards show
 -----------------------------------------------
 A preview is NOT a shrunk screenshot of the whole page (its text becomes unreadable in a small card).
-It is a close-up of the page's header only: the brass topic label, the question title in big type,
-and the four key-number cards, in dark mode. The small paragraph, the data line and the back link are
-hidden in the screenshot (the page itself is not changed).
+It is a close-up of the page's header only: the "Updated <date>" line in the top right corner, the
+brass topic label, the question title in big type, and the four key-number cards, in dark mode. The
+small paragraph, the data line and the back link are hidden in the screenshot (the page itself is
+not changed), and the date is enlarged, because the card shows this image at about half size and the
+13px it has on the real page would come out too small to read.
 
 How: each page is loaded in a 560 x 420 frame (4:3, the shape of the homepage card), the frame is
 shot at double resolution (1120 x 840 image) with headless Chrome, then cropped with PIL.
@@ -42,6 +44,7 @@ PAGES = [                                 # (project page, preview it produces),
     ("Deficit_Surplus/trade_balance.html", "Deficit_Surplus/trade_balance_preview.png"),
     ("Yield_Curve/sovereign_spreads.html", "Yield_Curve/sovereign_spreads_preview.png"),
     ("tips-gold-bonds/tips_gold_bonds.html", "tips-gold-bonds/tips_gold_bonds_preview.png"),
+    ("options-pricer/option_pricer.html", "options-pricer/option_pricer_preview.png"),
 ]
 
 
@@ -81,14 +84,18 @@ def main():
 # ===========================================================================
 
 def wrapper_html(page_uri):
-    """A blank page holding the project page in a 560 x 420 frame, hiding the small header text once it loads."""
+    """A blank page holding the project page in a 560 x 420 frame, hiding the small header text and
+    enlarging the "Updated <date>" line once it loads."""
     # returns a str of HTML, e.g. '<!doctype html><html><body style="margin:0;background:#101115"><iframe src="file:///C:/.../nasdaq_bonds.html" ...'
     return f"""<!doctype html><html><body style="margin:0;background:#101115">
 <iframe id="f" src="{page_uri}" style="width:{FRAME_W}px;height:{FRAME_H}px;border:0;display:block"></iframe>
 <script>
 document.getElementById("f").onload = e => {{
   const s = e.target.contentDocument.createElement("style");   // only inside the screenshot: the page file is untouched
-  s.textContent = ".answer,.meta,a.back{{display:none}} .eyebrow{{margin-top:28px}}";
+  s.textContent = ".answer,.meta,a.back{{display:none}}"                  // the long text and the back link go
+    + " .toprow{{justify-content:flex-end;min-height:0;margin-top:6px}}"  // leaving the date alone on its row, right-aligned
+    + " .upd{{font-size:17px;opacity:.85;min-height:0}}"                  // big enough to still read at card size
+    + " .eyebrow{{margin-top:20px}}";                                     // close the gap the hidden back link left
   e.target.contentDocument.head.appendChild(s);
 }};
 </script></body></html>"""

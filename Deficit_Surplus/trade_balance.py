@@ -1463,7 +1463,7 @@ def build_page(table, summary, world):
 </head>
 <body>
 <header class="band"><div class="in">
-<div class="toprow"><a class="back" href="../index.html">&larr; Macro Quant Lab</a><span class="upd">Updated 27 Oct 2026</span></div>
+<div class="toprow"><a class="back" href="../index.html">&larr; Macro Quant Lab</a><span class="upd">Updated 11 Oct 2026</span></div>
 <p class="eyebrow">Trade surpluses and deficits</p>
 <h1>Who sells more to the world than it buys?</h1>
 <p class="answer">{answer_text(s)}</p>
