@@ -45,6 +45,7 @@ PAGES = [                                 # (project page, preview it produces),
     ("Yield_Curve/sovereign_spreads.html", "Yield_Curve/sovereign_spreads_preview.png"),
     ("tips-gold-bonds/tips_gold_bonds.html", "tips-gold-bonds/tips_gold_bonds_preview.png"),
     ("options-pricer/option_pricer.html", "options-pricer/option_pricer_preview.png"),
+    ("spain-economy/spain_economy.html", "spain-economy/spain_economy_preview.png"),
 ]
 
 

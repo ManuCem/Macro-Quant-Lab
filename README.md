@@ -4,6 +4,56 @@ A personal research lab at the intersection of macroeconomics, machine learning 
 
 ## Projects
 
+### [What should an S&P 500 option cost today?](https://manucem.github.io/Macro-Quant-Lab/options-pricer/option_pricer.html)
+
+| Option (12 Nov 2026) | S&P 500 (S) | Strike (K) | T-bill (r) | VIX (σ) | Days (T) | Black-Scholes price | Delta | Market price (mid) | Model − market |
+|---|---|---|---|---|---|---|---|---|---|
+| Call | 7,628.24 | 7,630 | 4.125% | 17.48% | 30 | $164.59 | 0.54 | $129.90 (29 days) | +$31.69 (+24.4%) |
+| Put | 7,628.24 | 7,630 | 4.125% | 17.48% | 30 | $140.52 | −0.46 | — | — |
+
+- A 30-day at-the-money call costs about 2.2% of the index, a put about 1.8%.
+- The call moves about $0.54 and the put −$0.46 for each point the S&P 500 moves; the two deltas always differ by 1.
+- Put-call parity holds to 9 decimal places: call − put = S − K·e^(−rT) = 24.065.
+- The closest real call (strike 7,630, 11 Dec 2026) trades at $129.90; the model price for that contract ($161.59) is 24.4% above it.
+- The same maths in a beginner C++ file (`option_pricer.cpp`) prints the same call, put and delta to 4 decimals.
+
+**Conclusion:** Black-Scholes turns five numbers into a price, but the price is only as good as its volatility input: the VIX sits above the volatility the market prices into an at-the-money option, so the model comes out too expensive.
+
+### [What drove Spain's economy from the euro boom to today?](https://manucem.github.io/Macro-Quant-Lab/spain-economy/spain_economy.html)
+
+| Period | Real GDP growth, avg/yr (Spain / euro area) | Inflation, avg (Spain / euro area) | Unemployment, start → end | 10y spread over Germany, avg | Current account, avg % of GDP | Public debt at end, % of GDP | Real house prices |
+|---|---|---|---|---|---|---|---|
+| Euro boom (1995–2007) | +3.7% / +2.4% | 2.9% / 1.9% | 21.4% → 8.8% | 71 bp | −4.2% | 36% | +119% |
+| The bubble bursts (2008–2009) | −1.5% / −2.0% | 2.0% / 1.8% | 9.1% → 18.9% | 57 bp | −6.4% | 53% | −11% |
+| Euro debt crisis (2010–2013) | −1.2% / +0.7% | 2.3% / 2.0% | 19.1% → 25.5% | 292 bp | −1.0% | 100% | −35% |
+| Recovery (2014–2019) | +2.6% / +2.0% | 0.6% / 0.9% | 25.5% → 13.8% | 121 bp | +2.3% | 98% | +25% |
+| Covid and inflation (2020–2022) | +0.7% / +1.4% | 3.7% / 3.7% | 13.8% → 13.2% | 89 bp | +0.6% | 109% | −1% |
+| Since 2023 (2023–2026) | +2.9% / +1.0% | 3.2% / 3.2% | 13.1% → 10.3% | 75 bp | +3.0% | 100% | +26% |
+
+- Inside the euro Spain's real short-term rate averaged 0.1% in 1999–2007 (1.2% for the euro area); household and company debt rose from 85% to 216% of GDP and real house prices rose 126% to their 2007 peak.
+- Construction reached 12.4% of the economy in 2006 (euro area 6.2%), and the current account deficit hit 9.9% of GDP (Q2 2008).
+- 1.3 million jobs were lost in 2007–2009, 65% of them in construction; unemployment peaked at 26.4% (Feb 2013), and at 56.2% for under-25s.
+- The 10-year spread over Germany peaked at 555 bp (Jul 2012); public debt went from 36% of GDP (2007) to 104% (2014).
+- Since 2023 growth averaged 2.9% a year (euro area 1.0%), almost all from more people working; GDP per person is 91% of the EU average in PPS.
+
+**Conclusion:** each period had its own economic driver: cheap real credit inside the euro, a private-debt bust amplified by construction and temporary contracts, an adjustment through costs and exports, and recent growth driven mainly by more workers. High unemployment, a productivity level below the euro area and housing come back as weak spots in almost every period.
+
+### [What quietly drives bonds and gold?](https://manucem.github.io/Macro-Quant-Lab/tips-gold-bonds/tips_gold_bonds.html)
+
+| Reference value (Oct 2026) | Level | What it means |
+|---|---|---|
+| 10-year nominal yield | 5.1% | What a normal Treasury pays |
+| 10-year TIPS (real) yield | 2.65% | What you earn after inflation |
+| 10-year breakeven | 2.3% | The inflation the market expects |
+| US CPI inflation | 3.7% | The inflation that actually happened |
+
+- Nominal yield ≈ real yield + expected inflation: 5.1% ≈ 2.65% + 2.3%.
+- A TIPS adds CPI to its principal, so it keeps a 2.65% real return whatever inflation does.
+- A plain bond beats a TIPS only if actual inflation stays below ~2.4%.
+- Gold pays nothing, so holding $1,000 of gold gives up about $26.50 a year of real income at today's real yield.
+
+**Conclusion:** the real yield is the hidden price behind both bonds and gold. When it rises, bonds and gold usually fall; when it falls, both get more attractive.
+
 ### [Is money rotating between big tech and bonds?](https://manucem.github.io/Macro-Quant-Lab/nasdaq-bonds/nasdaq_bonds.html)
 
 | Window | Corr. Nasdaq vs 10y yield | Corr. Nasdaq vs long bonds | Nasdaq move on a +10 bp day | Nasdaq | 10y yield | Long bonds (TLT) | Regime |
@@ -20,22 +70,20 @@ A personal research lab at the intersection of macroeconomics, machine learning 
 
 **Conclusion:** money is rotating between big tech and bonds right now, and bonds are working as a cushion on tech's bad days. But the pattern is only a few weeks old and the link has flipped many times, so it is a current regime, not a rule.
 
-### [Was the VIX right about four market shocks?](https://manucem.github.io/Macro-Quant-Lab/VIX/output/shocks.html)
+### [What do France and Italy pay over Germany to borrow?](https://manucem.github.io/Macro-Quant-Lab/Yield_Curve/sovereign_spreads.html)
 
-| Episode | Day 0 | Avg VIX | Avg realized | VIX − realized | VIX peak | Market | S&P, day 0 to low |
-|---|---|---|---|---|---|---|---|
-| Dot-com (2000–02) | 14 Apr 2000 | 25.4 | 22.1 | +3.3 | 33.5 | Slightly overreacted | −42.7% |
-| 2008 crisis | 15 Sep 2008 | 48.8 | 53.0 | −4.2 | 80.9 | Underestimated | −43.3% |
-| Covid 2020 | 24 Feb 2020 | 41.4 | 48.0 | −6.6 | 82.7 | Underestimated | −30.6% |
-| Tariff shock (2025) | Apr 2025 | 28.4 | 21.8 | +6.6 | — | Overreacted | −7.7% |
+| Country | Spread over Germany (latest) | Sep 2026 monthly average | Record since 1999 | 5y CDS | Implied default risk / year |
+|---|---|---|---|---|---|
+| France | ~154 bp | 97 bp | 154 bp (Nov 2011) | 79.5 bp | ~1.3% |
+| Italy | ~107 bp | 89 bp | 519 bp (Nov 2011) | 68.0 bp | ~1.1% |
+| Germany | — | — | — | 7.3 bp | ~0.1% |
 
-- Over 30 years the VIX tracks realized volatility well (correlation ~0.7).
-- It sits above the volatility that follows on ~84% of days, +3.8 points on average: the price of insurance.
-- In all four shocks the VIX was too low in the 40 days before day 0.
-- In 2008 and Covid it underestimated the first weeks, then overshot once the panic was priced in.
-- Covid brought the biggest miss: realized volatility peaked at 97.6 while the VIX peaked at 82.7.
+- France's spread is back at its 2011 euro-crisis record (~154 bp).
+- Since 1999 France paid more than Italy in only 5 months, all of them recent.
+- Insuring French debt (CDS) now costs more than insuring Italian debt, and about 10 times as much as German debt.
+- Italy's record (519 bp in Nov 2011) is still far above where it is today.
 
-**Conclusion:** the VIX is a good thermometer but a poor forecaster. It reacts to shocks rather than seeing them coming, and in calm times it overprices volatility.
+**Conclusion:** the market now sees France as about as risky as Italy, a reversal of the euro crisis, driven by France's politics and deficits.
 
 ### [Did low interest rates bring the recovery?](https://manucem.github.io/Macro-Quant-Lab/Rates_and_Phillips/index.html)
 
@@ -71,51 +119,22 @@ A personal research lab at the intersection of macroeconomics, machine learning 
 
 **Conclusion:** a few large surpluses (China, Germany) face one giant deficit (the United States). That imbalance is what tariffs and trade wars are about.
 
-### [What do France and Italy pay over Germany to borrow?](https://manucem.github.io/Macro-Quant-Lab/Yield_Curve/sovereign_spreads.html)
+### [Was the VIX right about four market shocks?](https://manucem.github.io/Macro-Quant-Lab/VIX/output/shocks.html)
 
-| Country | Spread over Germany (latest) | Sep 2026 monthly average | Record since 1999 | 5y CDS | Implied default risk / year |
-|---|---|---|---|---|---|
-| France | ~154 bp | 97 bp | 154 bp (Nov 2011) | 79.5 bp | ~1.3% |
-| Italy | ~107 bp | 89 bp | 519 bp (Nov 2011) | 68.0 bp | ~1.1% |
-| Germany | — | — | — | 7.3 bp | ~0.1% |
+| Episode | Day 0 | Avg VIX | Avg realized | VIX − realized | VIX peak | Market | S&P, day 0 to low |
+|---|---|---|---|---|---|---|---|
+| Dot-com (2000–02) | 14 Apr 2000 | 25.4 | 22.1 | +3.3 | 33.5 | Slightly overreacted | −42.7% |
+| 2008 crisis | 15 Sep 2008 | 48.8 | 53.0 | −4.2 | 80.9 | Underestimated | −43.3% |
+| Covid 2020 | 24 Feb 2020 | 41.4 | 48.0 | −6.6 | 82.7 | Underestimated | −30.6% |
+| Tariff shock (2025) | Apr 2025 | 28.4 | 21.8 | +6.6 | — | Overreacted | −7.7% |
 
-- France's spread is back at its 2011 euro-crisis record (~154 bp).
-- Since 1999 France paid more than Italy in only 5 months, all of them recent.
-- Insuring French debt (CDS) now costs more than insuring Italian debt, and about 10 times as much as German debt.
-- Italy's record (519 bp in Nov 2011) is still far above where it is today.
+- Over 30 years the VIX tracks realized volatility well (correlation ~0.7).
+- It sits above the volatility that follows on ~84% of days, +3.8 points on average: the price of insurance.
+- In all four shocks the VIX was too low in the 40 days before day 0.
+- In 2008 and Covid it underestimated the first weeks, then overshot once the panic was priced in.
+- Covid brought the biggest miss: realized volatility peaked at 97.6 while the VIX peaked at 82.7.
 
-**Conclusion:** the market now sees France as about as risky as Italy, a reversal of the euro crisis, driven by France's politics and deficits.
-
-### [What quietly drives bonds and gold?](https://manucem.github.io/Macro-Quant-Lab/tips-gold-bonds/tips_gold_bonds.html)
-
-| Reference value (Oct 2026) | Level | What it means |
-|---|---|---|
-| 10-year nominal yield | 5.1% | What a normal Treasury pays |
-| 10-year TIPS (real) yield | 2.65% | What you earn after inflation |
-| 10-year breakeven | 2.3% | The inflation the market expects |
-| US CPI inflation | 3.7% | The inflation that actually happened |
-
-- Nominal yield ≈ real yield + expected inflation: 5.1% ≈ 2.65% + 2.3%.
-- A TIPS adds CPI to its principal, so it keeps a 2.65% real return whatever inflation does.
-- A plain bond beats a TIPS only if actual inflation stays below ~2.4%.
-- Gold pays nothing, so holding $1,000 of gold gives up about $26.50 a year of real income at today's real yield.
-
-**Conclusion:** the real yield is the hidden price behind both bonds and gold. When it rises, bonds and gold usually fall; when it falls, both get more attractive.
-
-### [What should an S&P 500 option cost today?](https://manucem.github.io/Macro-Quant-Lab/options-pricer/option_pricer.html)
-
-| Option (12 Nov 2026) | S&P 500 (S) | Strike (K) | T-bill (r) | VIX (σ) | Days (T) | Black-Scholes price | Delta | Market price (mid) | Model − market |
-|---|---|---|---|---|---|---|---|---|---|
-| Call | 7,628.24 | 7,630 | 4.125% | 17.48% | 30 | $164.59 | 0.54 | $129.90 (29 days) | +$31.69 (+24.4%) |
-| Put | 7,628.24 | 7,630 | 4.125% | 17.48% | 30 | $140.52 | −0.46 | — | — |
-
-- A 30-day at-the-money call costs about 2.2% of the index, a put about 1.8%.
-- The call moves about $0.54 and the put −$0.46 for each point the S&P 500 moves; the two deltas always differ by 1.
-- Put-call parity holds to 9 decimal places: call − put = S − K·e^(−rT) = 24.065.
-- The closest real call (strike 7,630, 11 Dec 2026) trades at $129.90; the model price for that contract ($161.59) is 24.4% above it.
-- The same maths in a beginner C++ file (`option_pricer.cpp`) prints the same call, put and delta to 4 decimals.
-
-**Conclusion:** Black-Scholes turns five numbers into a price, but the price is only as good as its volatility input: the VIX sits above the volatility the market prices into an at-the-money option, so the model comes out too expensive.
+**Conclusion:** the VIX is a good thermometer but a poor forecaster. It reacts to shocks rather than seeing them coming, and in calm times it overprices volatility.
 
 ## Automation
 

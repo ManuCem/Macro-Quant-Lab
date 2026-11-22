@@ -104,6 +104,7 @@ Every project page (one per study, like `nasdaq-bonds/nasdaq_bonds.html`) uses t
 | France vs Italy spreads | oxblood `#4a2414` / `#33180d` | copper `#cf6e3a` / `#ec9665` |
 | Gold vs real yields | espresso `#3a2b10` / `#281d0a` | gold `#c49a45` / `#d8b26a` |
 | S&P 500 option pricer | plum `#3b1840` / `#29102d` | orchid `#b45fc4` / `#d690e0` |
+| Spanish economy | olive `#283318` / `#1b2210` | saffron `#d6a419` / `#eec455` |
 
 **The title is always a question**, the one the project answers (for example *"Is money rotating between big tech and bonds?"*). A small brass label above it names the topic.
 
@@ -146,17 +147,18 @@ The root `index.html` is the front page on GitHub Pages. It is written by hand (
 
 **Featured study**
 - One large card overlaps the bottom of the header band, with a "Featured study" badge.
-- The featured study is **chosen by me**, not automatically the newest one. Right now it is the **S&P 500 option pricer** (`options-pricer/option_pricer.html`). Only change it when I ask. The study it replaces moves into the "All studies" grid, into the slot the new featured study had.
+- The featured study is **chosen by me**, not automatically the newest one. Right now it is the **S&P 500 option pricer** (`options-pricer/option_pricer.html`). Only change it when I ask. The study it replaces moves into the "All studies" grid at the place its date gives it (see below).
 
 **All studies grid**
 - Below "All studies", one card per project (every project except the featured one): preview image, small brass topic label, serif title, a one or two sentence description.
+- **The grid is sorted by date, newest first**: the "Updated <date>" shown on each study's page (for a section like Rates & Phillips, the date on its main study's page). A new study goes to the top; when a study is rebuilt and its date changes, move its card to its new place. Only the featured card is outside this order.
 - **No "Open dashboard / Open the page / Open the map" text.** The whole card is the link: clicking anywhere opens the project.
 - **Hover animation (mouse only):** in the **project's own accent colour** (`--c`, from the card's `--c-l` / `--c-d`), the border lights up, a soft glow appears, the card lifts 4px, the image zooms in slightly and the title turns that colour. The topic label also uses it. Keep it inside `@media (hover: hover)` so a tap on a phone does not leave a card stuck highlighted.
 - **Preview images** are shown in a 4:3 box with `object-fit: cover; object-position: top center`.
 - **Preview images are made with `python tools/make_previews.py`**, never by hand. A preview is a readable close-up of the page header, not a shrunk screenshot of the whole page (its text was unreadable in a small card). It shows the **"Updated <date>" line in the top right corner**, the brass topic label, the question title in big type and the four key-number cards, in **dark mode**, 4:3 (1120x840). The small paragraph, the data line and the back link are hidden in the screenshot only, and the date is enlarged there (about 17px) because the card shows the image at roughly half size and its real 13px would be unreadable. That screenshot is how the last-update date reaches the homepage: the cards themselves carry no date label. When you add a project, add its page to `PAGES` in that script and run it (`python tools/make_previews.py <folder>` does one project). On this machine, headless Chrome only works with its own profile (`--user-data-dir`), which the script handles. The image boxes on the homepage have a dark (`--band`) background, so no white edges show.
 
 **Adding a new project**
-- Add a card to the grid with the same markup as the others (image, topic, title, description), with links relative to the repo root (for example `nasdaq-bonds/nasdaq_bonds.html`). Give the card its project's colours (`style="--c-l:…;--c-d:…"`) and update the "N more" count next to "All studies".
+- Add a card to the **top** of the grid (it is the newest) with the same markup as the others (image, topic, title, description), with links relative to the repo root (for example `nasdaq-bonds/nasdaq_bonds.html`). Give the card its project's colours (`style="--c-l:…;--c-d:…"`) and update the "N more" count next to "All studies".
 - Make its preview with `python tools/make_previews.py <folder>` and add its section to the README (see the README section below).
 - Check that every link and image path exists, then run the phone test.
 
