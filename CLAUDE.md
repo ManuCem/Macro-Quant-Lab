@@ -1,7 +1,7 @@
 # Macro-Quant-Lab
 
 ## Primary Goal
-This is a **learning project** — a space to break down complex concepts in macroeconomics, machine learning, and quantitative trading. The goal is to:
+This is a **learning project** — a space to break down complex concepts in macroeconomics and quantitative trading. The goal is to:
 - Understand foundational ideas deeply
 - Test hypotheses and approaches
 - Build working prototypes and tools
@@ -142,7 +142,7 @@ The root `index.html` is the front page on GitHub Pages. It is written by hand (
 
 **Look**
 - Graphite header band (`--band: #17191f`) with brass accents (`--brass`), light page in light mode, dark page in dark mode. No green. Fonts: DM Serif Display for titles, DM Sans for text.
-- Header, in this order: small brass label "Macroeconomics · Machine learning · Quant trading", the title "Macro Quant Lab", then this description, word for word: *"Personal research lab at the intersection of macroeconomics, machine learning and quantitative trading — a space to test ideas and see what works."*
+- Header, in this order: small brass label "Macroeconomics · Quant trading", the title "Macro Quant Lab", then this description, word for word: *"Personal research lab at the intersection of macroeconomics and quantitative trading — a space to test ideas and see what works."*
 - Under the description, a "View the code on GitHub" button with the **GitHub logo** (inline SVG) linking to https://github.com/ManuCem/Macro-Quant-Lab. The footer link to GitHub also has the logo.
 
 **Featured study**
@@ -167,7 +167,7 @@ The root `index.html` is the front page on GitHub Pages. It is written by hand (
 The README is **minimalist: the website is the protagonist.** It is written by hand (no script), and every change must keep this layout, in this order:
 
 1. **Title:** just `# [Macro Quant Lab](https://manucem.github.io/Macro-Quant-Lab/)`. The title itself is the link to the website. No icon or emoji, no highlight box, no separate "Website" line, and never the website name or address written out a second time.
-2. **Description:** the same sentence as the homepage, word for word: *"A personal research lab at the intersection of macroeconomics, machine learning and quantitative trading — a space to test ideas and see what works."*
+2. **Description:** the same sentence as the homepage, word for word: *"A personal research lab at the intersection of macroeconomics and quantitative trading — a space to test ideas and see what works."*
 3. **`## Projects`:** one `###` section per project, in the same order as the homepage. Each section has:
    - **A heading that is the project's question, linked to its live page** (plain Markdown link, e.g. `### [Is money rotating between big tech and bonds?](…)`). No "Open live dashboard" / "Open the page" / "▶" links, and no yellow `<mark>` highlighter: it looked wrong on GitHub.
    - **A table with the project's data**, fairly wide (several columns, not just two or three): the same figures the page shows.

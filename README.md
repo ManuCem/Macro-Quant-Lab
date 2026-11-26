@@ -1,6 +1,6 @@
 # [Macro Quant Lab](https://manucem.github.io/Macro-Quant-Lab/)
 
-A personal research lab at the intersection of macroeconomics, machine learning and quantitative trading — a space to test ideas and see what works.
+A personal research lab at the intersection of macroeconomics and quantitative trading — a space to test ideas and see what works.
 
 ## Projects
 
